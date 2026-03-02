@@ -38,6 +38,10 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
   const [error, setError] = useState("");
   const router = useRouter();
 
+  setInterval(function(){
+    window.location.reload()
+  }, 3* 60 * 1000);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {

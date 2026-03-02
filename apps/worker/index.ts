@@ -16,8 +16,6 @@ async function main() {
         }
         let promises = result.map((message) => checkWebsiteHealth({ id: message.message.id, url: message.message.url }))
         await Promise.all(promises);
-        console.log(promises.length);
-        console.log(result.map(({ id }) => id));
 
         xAckBulk("USA", result.map(({ id }) => id));
     }

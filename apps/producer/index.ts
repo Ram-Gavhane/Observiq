@@ -1,5 +1,5 @@
 import prismaClient from "@repo/db";
-import { xAddBulk } from "@repo/redisstreams";
+import { client, xAddBulk } from "@repo/redisstreams";
 
 async function main() {
     const websites = await prismaClient.website.findMany({
@@ -15,8 +15,24 @@ async function main() {
     })));
 }
 
+async function createConsumerGroup() {
+    try {
+        const response = await client.xGroupCreate('better-uptime:website', 'USA', '$');
+        if (response === "OK") {
+            return;
+        } else {
+            console.log("Group already exists")
+        }
+    } catch (e) {
+
+    }
+
+
+}
+
 setInterval(() => {
     main();
-}, 10 * 1000);
+}, 3 * 60 * 1000);
 
+createConsumerGroup();
 main();

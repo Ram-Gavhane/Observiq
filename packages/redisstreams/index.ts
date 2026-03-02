@@ -50,7 +50,6 @@ async function xReadGroup(consumerGroupId: string, workerId: string): Promise<me
     )
     const messages = redisStreamResult as redisStreamResultType[] | undefined;
     const result: messageType[] | undefined = messages?.[0]?.messages;
-    console.log(result);
     return result;
 }
 
@@ -61,4 +60,4 @@ async function xAck(consumerGroup: string, eventId: string) {
 async function xAckBulk(consumerGroup: string, eventIds: string[]) {
     eventIds.map(eventId => xAck(consumerGroup, eventId));
 }
-export { xAddBulk, xReadGroup, xAckBulk };
+export { xAddBulk, xReadGroup, xAckBulk, client };
