@@ -11,17 +11,11 @@ interface Tick {
 }
 
 export function UptimeBars({ ticks, maxBars = 60 }: { ticks: Tick[]; maxBars?: number }) {
-  // We want to show a fixed number of bars. 
-  // If we have fewer ticks, we can fill the rest as "empty" or just show what we have right-aligned.
-  // Let's pad left with "empty" states if necessary.
   
-  // Sort ticks ascending (oldest to newest) since the API might return descending.
   const sortedTicks = [...ticks].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   
-  // Take only the last `maxBars` ticks
   const recentTicks = sortedTicks.slice(-maxBars);
   
-  // Pad with nulls if we have less data than maxBars
   const padding = Math.max(0, maxBars - recentTicks.length);
   const bars = [
     ...Array(padding).fill(null),

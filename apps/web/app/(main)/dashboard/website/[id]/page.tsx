@@ -13,6 +13,15 @@ import {
   LucideTrash2
 } from "lucide-react";
 import axios from "axios";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface Tick {
   id: string;
@@ -31,6 +40,7 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const [website, setWebsite] = useState<Website | null>(null);
   const [ticks, setTicks] = useState<Tick[]>([]);
+  const [insights, setInsights] = useState<{uptime24h: string, uptime7d: string, responseTimeTrends: any[]} | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
@@ -56,8 +66,12 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
       const response = await axios.get(`http://localhost:3001/website/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      const insightsResponse = await axios.get(`http://localhost:3001/website/${id}/insights`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setWebsite(response.data.website);
       setTicks(response.data.latestTicks);
+      setInsights(insightsResponse.data);
     } catch (err: any) {
       setError("Failed to fetch website details");
     } finally {
@@ -130,6 +144,63 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
               </button>
             </div>
           </div>
+
+          {insights && (
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm flex flex-col justify-center items-center text-center">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Uptime (Last 24h)</h3>
+                <div className="text-4xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">
+                  {insights.uptime24h}%
+                </div>
+              </div>
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm flex flex-col justify-center items-center text-center">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Uptime (Last 7 Days)</h3>
+                <div className="text-4xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">
+                  {insights.uptime7d}%
+                </div>
+              </div>
+            </div>
+          )}
+
+          {insights && insights.responseTimeTrends.length > 0 && (
+            <div className="grid gap-6">
+              <h2 className="text-xl font-bold">Response Time Trends (Last 24h)</h2>
+              <div className="rounded-3xl border border-border bg-card p-6 shadow-sm h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={insights.responseTimeTrends}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
+                    <XAxis 
+                      dataKey="time" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#888888', fontSize: 12 }}
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#888888', fontSize: 12 }}
+                      dx={-10}
+                      tickFormatter={(value) => `${value}ms`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      labelStyle={{ fontWeight: 'bold', color: '#888888', marginBottom: '4px' }}
+                      formatter={(value) => [`${value}ms`, 'Response Time']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="responseTime" 
+                      stroke="#4f46e5" 
+                      strokeWidth={3}
+                      dot={false}
+                      activeDot={{ r: 6, fill: '#4f46e5', stroke: '#ffffff', strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-6">
             <h2 className="text-xl font-bold">Latest Status Checks</h2>
