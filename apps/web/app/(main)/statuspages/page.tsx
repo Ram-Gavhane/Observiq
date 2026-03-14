@@ -43,7 +43,7 @@ export default function StatusPages() {
   const fetchWebsites = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:3001/get-websites", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/get-websites", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setWebsites(response.data.websites);
@@ -59,7 +59,7 @@ export default function StatusPages() {
     if (!confirm("Create a public status page for this website?")) return;
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`http://localhost:3001/website/${websiteId}/statuspage`, {}, {
+      await axios.post(process.env.NEXT_PUBLIC_API_URL + `/website/${websiteId}/statuspage`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchWebsites(); // Refresh to get the new status page reference

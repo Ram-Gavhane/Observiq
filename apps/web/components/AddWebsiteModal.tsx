@@ -54,7 +54,7 @@ export function AddWebsiteModal({ onSuccess }: AddWebsiteModalProps) {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:3001/add-website", 
+      await axios.post(process.env.NEXT_PUBLIC_API_URL + "/add-website", 
         { url, regions: selectedRegions },
         { headers: { Authorization: `Bearer ${token}` } }
       );

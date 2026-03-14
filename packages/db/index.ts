@@ -9,4 +9,3 @@ const prismaClient = new PrismaClient({ adapter });
 
 export default prismaClient;
 export { REGION } from "./generated/prisma/enums";
-export * from "./generated/prisma/client";

@@ -63,10 +63,10 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
   const fetchDetails = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`http://localhost:3001/website/${id}`, {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + `/website/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const insightsResponse = await axios.get(`http://localhost:3001/website/${id}/insights`, {
+      const insightsResponse = await axios.get(process.env.NEXT_PUBLIC_API_URL + `/website/${id}/insights`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setWebsite(response.data.website);
@@ -88,7 +88,7 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
     setError("");
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3001/website/${id}`, {
+      await axios.delete(process.env.NEXT_PUBLIC_API_URL + `/website/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       router.push("/dashboard");

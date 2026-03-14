@@ -38,7 +38,7 @@ export default function DashboardPage() {
   const fetchWebsites = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:3001/get-websites", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/get-websites", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setWebsites(response.data.websites);

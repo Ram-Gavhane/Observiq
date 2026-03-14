@@ -53,7 +53,7 @@ export default function PublicStatusPage({ params }: { params: Promise<{ id: str
 
   const fetchDetails = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/statuspage/${id}`);
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + `/statuspage/${id}`);
       setStatusPage(response.data.statusPage);
       setTicks(response.data.latestTicks);
     } catch (err: any) {
