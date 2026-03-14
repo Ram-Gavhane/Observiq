@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "./config";
 import middleware from "./middleware";
 import cors from "cors";
-
+import type { WebsiteTick } from "./types";
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -155,12 +155,11 @@ app.get("/website/:id/insights", middleware, async (req, res) => {
 
     try {
         // Fetch 24h ticks
-        const ticks24h = await prismaClient.websiteTick.findMany({
+        const ticks24h: WebsiteTick[] = await prismaClient.websiteTick.findMany({
             where: {
                 websiteId: id,
                 createdAt: { gte: ago24h }
             },
-            select: { status: true, responseTimeMs: true, createdAt: true },
             orderBy: { createdAt: "asc" } // Order chronological for chart
         });
 
@@ -173,14 +172,12 @@ app.get("/website/:id/insights", middleware, async (req, res) => {
         });
 
         const uptime7d = total7dTicks > 0 ? (up7dTicks / total7dTicks) * 100 : 0;
-        
+
         let up24hTicks = 0;
         const responseTimeTrends: { time: string, responseTime: number }[] = [];
-        
-        ticks24h.forEach(tick => {
+
+        ticks24h.forEach((tick) => {
             if (tick.status === "UP") up24hTicks++;
-            // Downsample for the chart if many, but for now we just map them directly
-            // e.g. "14:00"
             const timeStr = new Date(tick.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             responseTimeTrends.push({
                 time: timeStr,
