@@ -3,7 +3,6 @@ import { LucideShieldCheck, LucideZap, LucideClock, LucideMail, LucideBarChart3,
 import { Footer } from "@/components/Footer";
 
 export default function Home() {
-  
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       {/* Navbar */}
