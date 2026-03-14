@@ -144,7 +144,7 @@ export default function StatusPages() {
                               className="inline-flex h-8 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
                             >
                               <LucidePlus className="h-3 w-3" />
-                              {requesting ? "Creating..." : "Create Status Page"}
+                              {requesting ? <LucideLoader2 className="h-3 w-3 animate-spin" /> : "Create Status Page"}
                             </button>
                           )}
                         </td>

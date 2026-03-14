@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { LucideShieldCheck, LucideZap, LucideClock, LucideMail, LucideBarChart3, LucideFileJson, LucideGithub, FileBoxIcon } from "lucide-react";
+import { Footer } from "@/components/Footer";
 
 export default function Home() {
+  
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       {/* Navbar */}
@@ -14,14 +16,10 @@ export default function Home() {
           <div className="hidden items-center gap-8 md:flex">
             <Link href="#services" className="text-sm font-medium opacity-60 transition-opacity hover:opacity-100">Services</Link>
             <Link href="#upcoming" className="text-sm font-medium opacity-60 transition-opacity hover:opacity-100">Upcoming</Link>
-            <Link href="https://github.com/Ram-Gavhane/Better-Uptime" target="_blank" className="flex items-center gap-1 text-sm font-medium opacity-60 transition-opacity hover:opacity-100">
-              <LucideGithub className="h-4 w-4" />
-              GitHub
-            </Link>
              <div className="flex gap-3 items-center"><Link href="/signin" className="text-sm font-medium opacity-60 transition-opacity hover:opacity-100">
                 Sign In
               </Link>
-              <Link href="/signup" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:scale-105 active:scale-95">
+              <Link href="/signup" className="rounded-full bg-primary px-4 py-2 ml-2 text-sm font-semibold text-primary-foreground transition-all hover:scale-105 active:scale-95">
                 Sign Up
               </Link>
             </div>
@@ -139,17 +137,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-border py-12 px-6">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 md:flex-row">
-          <div className="flex items-center gap-2 font-bold opacity-50">
-            <LucideShieldCheck className="h-5 w-5" />
-            <span>Better Uptime</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Better Uptime Inc. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

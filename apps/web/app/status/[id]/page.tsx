@@ -43,10 +43,6 @@ export default function PublicStatusPage({ params }: { params: Promise<{ id: str
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Note: To make this fully public, the backend auth might need to be bypassed for this specific route.
-    // However, since we share the `/website/:id` endpoint which currently requires `middleware` (auth),
-    // we fetch using local token if it exists (for demo purposes if the user is viewing their own stuff).
-    // In a real scenario, you'd create a public endpoint `app.get("/public/website/:id")` without middleware.
     fetchDetails();
     
     const interval = setInterval(() => {

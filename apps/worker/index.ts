@@ -31,8 +31,6 @@ async function main() {
 
         await Promise.all(promises);
 
-        // Ack all messages we received from the group, even the ones we ignored, 
-        // so they don't stay pending for this consumer group forever.
         xAckBulk(REGION, result.map(({ id }) => id));
     }
 }
