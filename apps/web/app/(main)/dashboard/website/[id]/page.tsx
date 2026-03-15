@@ -47,7 +47,7 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
   const router = useRouter();  useEffect(() => {
     const interval = setInterval(() => {
       window.location.reload();
-    }, 3 * 60 * 1000);
+    }, 1 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 

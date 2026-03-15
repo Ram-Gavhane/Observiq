@@ -21,14 +21,16 @@ model User {
 }
 
 model Website {
-  id         String        @id @default(uuid())
-  url        String
-  userId     String
-  regions    REGION[]
-  timeAdded  DateTime      @default(now())
-  ticks      WebsiteTick[]
-  user       User          @relation(fields: [userId], references: [id])
-  statusPage StatusPage?
+  id                   String                @id @default(uuid())
+  url                  String
+  userId               String
+  regions              REGION[]
+  timeAdded            DateTime              @default(now())
+  ticks                WebsiteTick[]
+  user                 User                  @relation(fields: [userId], references: [id])
+  statusPage           StatusPage?
+  notificationChannels NotificationChannel[]
+  alerts               Alerts[]
 }
 
 model StatusPage {
@@ -51,7 +53,7 @@ model WebsiteTick {
   responseTimeMs Int
   status         WebsiteStatus
   region         REGION
-  website        Website       @relation(fields: [websiteId], references: [id])
+  website        Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
   websiteId      String
   createdAt      DateTime      @default(now())
 }
@@ -60,4 +62,32 @@ enum WebsiteStatus {
   UP
   DOWN
   UNKNOWN
+}
+
+model NotificationChannel {
+  id        String   @id @default(uuid())
+  websiteId String
+  type      String
+  config    Json
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  website Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  alerts  Alerts[]
+}
+
+model Alerts {
+  id                    String    @id @default(cuid())
+  websiteId             String
+  notificationChannelId String
+  status                String    @default("triggered") // "triggered" | "escalated" | "resolved"
+  alertCount            Int       @default(0)
+  escalated             Boolean   @default(false)
+  triggeredAt           DateTime  @default(now())
+  resolvedAt            DateTime?
+  lastAlertedAt         DateTime?
+
+  website             Website             @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
 }
