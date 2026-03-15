@@ -1,12 +1,12 @@
 {
   "name": "api",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run index.ts",
-    "build": "bun build index.ts --compile --minify",
-    "start": "bun run index.ts"
+    "dev": "bun run src/index.ts",
+    "build": "bun build src/index.ts --compile --minify",
+    "start": "bun run src/index.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"
