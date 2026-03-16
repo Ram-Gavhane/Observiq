@@ -26,6 +26,11 @@ export const listWebsitesForUser = async (userId: string) => {
 export const getWebsiteById = async (id: string) => {
   return prismaClient.website.findFirst({
     where: { id },
+    include: {
+      _count: {
+        select: { alerts: true },
+      },
+    },
   });
 };
 
