@@ -8,7 +8,8 @@ import {
   LucideLoader2,
   LucideExternalLink,
   LucideCheckCircle2,
-  LucideAlertCircle
+  LucideAlertCircle,
+  LucideMapPin
 } from "lucide-react";
 import axios from "axios";
 import { AddWebsiteModal } from "@/components/AddWebsiteModal";
@@ -93,7 +94,7 @@ export default function DashboardPage() {
                   <thead>
                     <tr className="border-b border-border bg-zinc-50/50 dark:bg-zinc-900/50">
                       <th className="px-6 py-4 font-bold">Website</th>
-                      <th className="px-6 py-4 font-bold">Status</th>
+                      <th className="px-6 py-4 font-bold">Region</th>
                       <th className="px-6 py-4 font-bold text-right">Actions</th>
                     </tr>
                   </thead>
@@ -109,9 +110,9 @@ export default function DashboardPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-medium">
-                            <LucideCheckCircle2 className="h-4 w-4" />
-                            Active
+                          <div className="flex items-center gap-2 text-muted-foreground font-medium">
+                            <LucideMapPin className="h-4 w-4" />
+                            <span className="capitalize">{website.regions?.join(", ") || "Unknown"}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">

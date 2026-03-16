@@ -10,7 +10,11 @@ import {
   LucideCheckCircle2,
   LucideXCircle,
   LucideLoader2,
-  LucideTrash2
+  LucideTrash2,
+  LucideAlertTriangle,
+  LucideShield,
+  LucidePauseCircle,
+  LucideSettings
 } from "lucide-react";
 import axios from "axios";
 import {
@@ -34,6 +38,36 @@ interface Tick {
 interface Website {
   id: string;
   url: string;
+  timeAdded: string;
+  _count?: {
+    alerts: number;
+  };
+}
+
+function formatUptime(dateStr: string) {
+  const now = new Date();
+  const added = new Date(dateStr);
+  const diffMs = now.getTime() - added.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diffMs / 1000 / 60) % 60);
+  let result = [];
+  if (days > 0) result.push(`${days} day${days > 1 ? 's' : ''}`);
+  if (hours > 0) result.push(`${hours} hour${hours > 1 ? 's' : ''}`);
+  if (minutes > 0) result.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+  return result.length > 0 ? result.join(' ') : 'Just added';
+}
+
+function formatLastChecked(dateStr?: string) {
+  if (!dateStr) return 'Never';
+  const now = new Date();
+  const checked = new Date(dateStr);
+  const diffSec = Math.floor((now.getTime() - checked.getTime()) / 1000);
+  if (diffSec < 60) return `${diffSec} seconds ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} minute${diffMin === 1 ? '' : 's'} ago`;
+  const diffHour = Math.floor(diffMin / 60);
+  return `${diffHour} hour${diffHour === 1 ? '' : 's'} ago`;
 }
 
 export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -142,6 +176,49 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
                 {deleting ? <LucideLoader2 className="h-4 w-4 animate-spin" /> : <LucideTrash2 className="h-4 w-4" />}
                 Delete Website
               </button>
+            </div>
+          </div>
+
+          {/* New ActionBar & Stats */}
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center gap-6">
+              <button className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                <LucideAlertTriangle className="h-4 w-4" />
+                <span>Send a test alert</span>
+              </button>
+              <button className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                <LucideShield className="h-4 w-4" />
+                <span>Incidents</span>
+              </button>
+              <button className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                <LucidePauseCircle className="h-4 w-4" />
+                <span>Pause this monitor</span>
+              </button>
+              <Link href={`/dashboard/website/${website.id}/configure`} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                <LucideSettings className="h-4 w-4" />
+                <span>Configure</span>
+              </Link>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">Monitor is up for</h3>
+                <div className="text-xl font-bold">
+                  {website.timeAdded ? formatUptime(website.timeAdded) : 'N/A'}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">Last checked</h3>
+                <div className="text-xl font-bold">
+                  {formatLastChecked(ticks[0]?.createdAt)}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">Incidents</h3>
+                <div className="text-xl font-bold">
+                  {website._count?.alerts || 0}
+                </div>
+              </div>
             </div>
           </div>
 
