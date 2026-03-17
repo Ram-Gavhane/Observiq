@@ -61,6 +61,25 @@ export const getWebsite = async (req: Request, res: Response) => {
   });
 };
 
+export const updateWebsiteChannelsController = async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const { channelIds } = req.body;
+  const userId = req.userId;
+
+  const website = await getWebsiteById(id);
+  if (!website || website.userId !== userId) {
+    return res.status(404).json({ message: "Website not found or unauthorized" });
+  }
+
+  try {
+    await import("./websites.service").then(srv => srv.updateWebsiteChannels(id, channelIds || []));
+    res.json({ message: "Channels updated successfully" });
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to update channels" });
+  }
+};
+
 export const getWebsiteInsights = async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const userId = req.userId;

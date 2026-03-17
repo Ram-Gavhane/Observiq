@@ -43,7 +43,7 @@ export default function DashboardPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setWebsites(response.data.websites);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError("Failed to fetch websites");
     } finally {
       setLoading(false);

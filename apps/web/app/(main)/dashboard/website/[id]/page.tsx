@@ -74,7 +74,7 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const [website, setWebsite] = useState<Website | null>(null);
   const [ticks, setTicks] = useState<Tick[]>([]);
-  const [insights, setInsights] = useState<{uptime24h: string, uptime7d: string, responseTimeTrends: any[]} | null>(null);
+  const [insights, setInsights] = useState<{uptime24h: string, uptime7d: string, responseTimeTrends: unknown[]} | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
@@ -106,7 +106,7 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
       setWebsite(response.data.website);
       setTicks(response.data.latestTicks);
       setInsights(insightsResponse.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError("Failed to fetch website details");
     } finally {
       setLoading(false);
@@ -126,8 +126,8 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
         headers: { Authorization: `Bearer ${token}` }
       });
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to delete website");
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to delete website");
       setDeleting(false);
     }
   };

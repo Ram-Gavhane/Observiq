@@ -82,8 +82,9 @@ async function handleAlertLogic(websiteId: string, currentStatus: "UP" | "DOWN")
         && recentTicks.every(t => t.status === "DOWN");
 
     // Fetch all active notification channels for this website
-    const channels = await prismaClient.notificationChannel.findMany({
-        where: { websiteId, active: true },
+    const channels = await prismaClient.websiteNotificationChannel.findMany({
+        where: { websiteId },
+        include: { notificationChannel: true }
     });
 
     if (channels.length === 0) return;
@@ -94,7 +95,7 @@ async function handleAlertLogic(websiteId: string, currentStatus: "UP" | "DOWN")
             const existingAlert = await prismaClient.alerts.findFirst({
                 where: {
                     websiteId,
-                    notificationChannelId: channel.id,
+                    notificationChannelId: channel.notificationChannelId,
                     status: { in: ["triggered", "escalated"] },
                 },
             });
@@ -116,7 +117,7 @@ async function handleAlertLogic(websiteId: string, currentStatus: "UP" | "DOWN")
                 await prismaClient.alerts.create({
                     data: {
                         websiteId,
-                        notificationChannelId: channel.id,
+                        notificationChannelId: channel.notificationChannelId,
                         status: "triggered",
                         alertCount: 1,
                         lastAlertedAt: new Date(),

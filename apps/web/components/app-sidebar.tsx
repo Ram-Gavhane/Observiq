@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
   SidebarFooter
 } from "@/components/ui/sidebar";
-import { LucideShieldCheck, LucideGlobe, LucideLogOut, LucideActivity, LucideAlertOctagon } from "lucide-react";
+import { LucideShieldCheck, LucideGlobe, LucideLogOut, LucideActivity, LucideAlertOctagon, LucideSettings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -57,11 +57,19 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-               <SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Incidents">
                   <Link href="/incidents">
                   <LucideAlertOctagon className="h-4 w-4" />
                     <span>Incidents</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Settings">
+                  <Link href="/settings/notifications">
+                  <LucideSettings className="h-4 w-4" />
+                    <span>Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

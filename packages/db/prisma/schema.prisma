@@ -68,8 +68,8 @@ enum WebsiteStatus {
 model NotificationChannel {
   id        String   @id @default(uuid())
   userId    String
-  type      String
-  config    Json
+  type      String // "email" | "sms" | "slack"
+  config    Json // { "email": "john@doe.com" }
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

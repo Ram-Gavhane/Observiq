@@ -30,8 +30,28 @@ export const getWebsiteById = async (id: string) => {
       _count: {
         select: { alerts: true },
       },
+      websiteNotificationChannels: {
+        include: {
+          notificationChannel: true,
+        },
+      },
     },
   });
+};
+
+export const updateWebsiteChannels = async (websiteId: string, notificationChannelIds: string[]) => {
+  await prismaClient.websiteNotificationChannel.deleteMany({
+    where: { websiteId },
+  });
+
+  if (notificationChannelIds.length > 0) {
+    await prismaClient.websiteNotificationChannel.createMany({
+      data: notificationChannelIds.map((id) => ({
+        websiteId,
+        notificationChannelId: id,
+      })),
+    });
+  }
 };
 
 export const getLatestTicks = async (websiteId: string, take = 10) => {
