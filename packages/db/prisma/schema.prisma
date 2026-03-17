@@ -14,23 +14,24 @@ datasource db {
 }
 
 model User {
-  id       String    @id @default(uuid())
-  email    String    @unique
-  password String
-  websites Website[]
+  id                   String                @id @default(uuid())
+  email                String                @unique
+  password             String
+  websites             Website[]
+  notificationChannels NotificationChannel[]
 }
 
 model Website {
-  id                   String                @id @default(uuid())
-  url                  String
-  userId               String
-  regions              REGION[]
-  timeAdded            DateTime              @default(now())
-  ticks                WebsiteTick[]
-  user                 User                  @relation(fields: [userId], references: [id])
-  statusPage           StatusPage?
-  notificationChannels NotificationChannel[]
-  alerts               Alerts[]
+  id                          String                       @id @default(uuid())
+  url                         String
+  userId                      String
+  regions                     REGION[]
+  timeAdded                   DateTime                     @default(now())
+  ticks                       WebsiteTick[]
+  user                        User                         @relation(fields: [userId], references: [id])
+  statusPage                  StatusPage?
+  alerts                      Alerts[]
+  websiteNotificationChannels WebsiteNotificationChannel[]
 }
 
 model StatusPage {
@@ -66,21 +67,32 @@ enum WebsiteStatus {
 
 model NotificationChannel {
   id        String   @id @default(uuid())
-  websiteId String
+  userId    String
   type      String
   config    Json
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  website Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  alerts  Alerts[]
+  user                        User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alerts                      Alerts[]
+  websiteNotificationChannels WebsiteNotificationChannel[]
+}
+
+model WebsiteNotificationChannel {
+  websiteId String
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  notificationChannelId String
+  notificationChannel   NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+
+  @@id([websiteId, notificationChannelId])
 }
 
 model Alerts {
   id                    String    @id @default(cuid())
   websiteId             String
-  notificationChannelId String
+  notificationChannelId String?
   status                String    @default("triggered") // "triggered" | "escalated" | "resolved"
   alertCount            Int       @default(0)
   escalated             Boolean   @default(false)
@@ -88,6 +100,6 @@ model Alerts {
   resolvedAt            DateTime?
   lastAlertedAt         DateTime?
 
-  website             Website             @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+  website             Website              @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  notificationChannel NotificationChannel? @relation(fields: [notificationChannelId], references: [id], onDelete: SetNull)
 }
