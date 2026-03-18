@@ -10,14 +10,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter
+  SidebarFooter,
+  useSidebar
 } from "@/components/ui/sidebar";
-import { LucideShieldCheck, LucideGlobe, LucideLogOut, LucideActivity, LucideAlertOctagon, LucideSettings } from "lucide-react";
+import { LucideShieldCheck, LucideGlobe, LucideLogOut, LucideActivity, LucideAlertOctagon, LucideSettings, PanelLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export function AppSidebar() {
   const router = useRouter();
+  const { toggleSidebar } = useSidebar();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -25,16 +27,32 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-border/50 py-4">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div className="flex items-center gap-2 px-4 text-xl font-bold tracking-tight">
-              <LucideShieldCheck className="h-6 w-6 text-primary" />
-              <span>Better Uptime</span>
-            </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="flex items-center justify-between px-4 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
+          
+          {/* Expanded State Content */}
+          <div className="flex items-center gap-2 text-xl font-bold tracking-tight group-data-[collapsible=icon]:hidden">
+            <LucideShieldCheck className="h-6 w-6 shrink-0 text-primary" />
+          </div>
+          
+          <button 
+            onClick={toggleSidebar}
+            className="hidden md:flex h-8 w-8 items-center justify-center rounded-md hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden text-muted-foreground transition-colors"
+          >
+            <PanelLeft className="h-5 w-5" />
+          </button>
+
+          {/* Collapsed State Content */}
+          <div 
+            onClick={toggleSidebar}
+            className="hidden group-data-[collapsible=icon]:flex group/toggle h-8 w-8 cursor-pointer items-center justify-center relative rounded-md hover:bg-sidebar-accent transition-colors"
+          >
+            <LucideShieldCheck className="absolute h-6 w-6 text-primary transition-all duration-200 group-hover/toggle:opacity-0 group-hover/toggle:scale-75" />
+            <PanelLeft className="absolute h-5 w-5 text-muted-foreground opacity-0 transition-all duration-200 group-hover/toggle:opacity-100 group-hover/toggle:scale-100 scale-75" />
+          </div>
+
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -77,7 +95,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-border/50 p-4">
+      <SidebarFooter className="border-t border-border/50 p-4 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:!pb-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton 
@@ -85,8 +103,8 @@ export function AppSidebar() {
               className="text-muted-foreground hover:text-foreground"
               tooltip="Logout"
             >
-              <LucideLogOut className="h-4 w-4" />
-              <span>Logout</span>
+              <LucideLogOut className="h-4 w-4 shrink-0" />
+              <span className="group-data-[collapsible=icon]:hidden">Logout</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

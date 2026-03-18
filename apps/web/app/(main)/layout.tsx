@@ -1,15 +1,16 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { NavBar } from "@/components/NavBar";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <AppSidebar />
-      <div className="flex-1 w-full min-h-screen transition-all duration-300 ease-in-out bg-zinc-50/50 dark:bg-zinc-950">
-        <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b border-border bg-background/50 px-6 backdrop-blur">
-          <SidebarTrigger />
-        </header>
-        {children}
+      <div className="flex-1 w-full flex flex-col min-h-screen transition-all duration-300 ease-in-out bg-zinc-50/50 dark:bg-zinc-950">
+        <NavBar />
+        <main className="flex-1 p-6">
+          {children}
+        </main>
       </div>
     </SidebarProvider>
   );

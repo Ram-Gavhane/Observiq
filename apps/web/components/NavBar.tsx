@@ -2,30 +2,69 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LucideShieldCheck, LucideLogOut } from "lucide-react";
+import { LucideLogOut, UserCircle, User } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 export function NavBar() {
   const router = useRouter();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     router.push("/signin");
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <nav className="border-b border-border bg-background/70 backdrop-blur-md sticky top-0 z-50">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-          <LucideShieldCheck className="h-6 w-6 text-primary" />
-          <span>Better Uptime</span>
-        </Link>
-        <button 
-          onClick={handleLogout}
-          className="flex items-center gap-2 text-sm font-medium opacity-60 hover:opacity-100 transition-opacity"
-        >
-          <LucideLogOut className="h-4 w-4" />
-          Logout
-        </button>
+    <nav className="border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-50">
+      <div className="mx-auto flex h-16 w-full items-center justify-between px-6">
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight">
+            <span>Better Uptime</span>
+          </Link>
+        </div>
+        <div className="relative" ref={dropdownRef}>
+          <button 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-2 text-sm font-medium opacity-60 hover:opacity-100 transition-opacity focus:outline-none"
+          >
+            <UserCircle className="h-6 w-6" />
+          </button>
+
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-background border border-border py-1 z-50">
+              <Link
+                href="/profile"
+                className="flex items-center px-4 py-2 text-sm opacity-80 hover:opacity-100 hover:bg-muted transition-colors"
+                onClick={() => setIsDropdownOpen(false)}
+              >
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </Link>
+              <button
+                onClick={() => {
+                  setIsDropdownOpen(false);
+                  handleLogout();
+                }}
+                className="flex w-full items-center px-4 py-2 text-sm text-red-500 opacity-80 hover:opacity-100 hover:bg-muted transition-colors text-left"
+              >
+                <LucideLogOut className="mr-2 h-4 w-4" />
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );
