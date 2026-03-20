@@ -11,3 +11,19 @@ export const createUser = async (email: string, password: string) => {
     data: { email, password },
   });
 };
+
+export const getUserProfile = async (id: string) => {
+  return prismaClient.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      email: true,
+      _count: {
+        select: {
+          websites: true,
+          notificationChannels: true,
+        },
+      },
+    },
+  });
+};

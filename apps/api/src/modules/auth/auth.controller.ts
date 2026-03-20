@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../../common/config";
-import { createUser, findUserByEmail } from "./auth.service";
+import { createUser, findUserByEmail, getUserProfile } from "./auth.service";
 
 export const signup = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -39,4 +39,21 @@ export const signin = async (req: Request, res: Response) => {
     message: "User signed in successfully",
     token,
   });
+};
+
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await getUserProfile(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ user });
+  } catch (error: any) {
+    console.log(error);
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
 };
