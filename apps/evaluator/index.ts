@@ -1,76 +1,96 @@
 import prismaClient from "@repo/db";
 
-const CONSECUTIVE_FAILURES_THRESHOLD = 2;
+async function handleAlertLogic() {
+    const CONSECUTIVE_FAILURES_THRESHOLD = 2;
 
-async function handleAlertLogic(websiteId: string, currentStatus: "UP" | "DOWN") {
-    // Get the last N ticks for this website (any region — or filter by region if you prefer)
-    const recentTicks = await prismaClient.websiteTick.findMany({
-        where: { websiteId },
-        orderBy: { createdAt: "desc" },
-        take: CONSECUTIVE_FAILURES_THRESHOLD,
-        select: { status: true },
+    const websitesDown = await prismaClient.$queryRaw<{ websiteId: string }[]>`
+    SELECT "websiteId"
+    FROM (
+        SELECT "websiteId", "status",
+               ROW_NUMBER() OVER (PARTITION BY "websiteId" ORDER BY "createdAt" DESC) as rn
+        FROM "WebsiteTick"
+    ) ranked
+    WHERE rn <= ${CONSECUTIVE_FAILURES_THRESHOLD}
+    GROUP BY "websiteId"
+    HAVING COUNT(*) = ${CONSECUTIVE_FAILURES_THRESHOLD}
+       AND SUM(CASE WHEN status = 'DOWN' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
+`;
+
+    // Step 2 — find websites that are back UP, resolve their alerts
+    const websitesUp = await prismaClient.$queryRaw<{ websiteId: string }[]>`
+    SELECT "websiteId"
+    FROM (
+        SELECT "websiteId", "status",
+               ROW_NUMBER() OVER (PARTITION BY "websiteId" ORDER BY "createdAt" DESC) as rn
+        FROM "WebsiteTick"
+    ) ranked
+    WHERE rn <= ${CONSECUTIVE_FAILURES_THRESHOLD}
+    GROUP BY "websiteId"
+    HAVING COUNT(*) = ${CONSECUTIVE_FAILURES_THRESHOLD}
+       AND SUM(CASE WHEN status = 'UP' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
+`;
+
+    await prismaClient.alerts.updateMany({
+        where: {
+            websiteId: { in: websitesUp.map(w => w.websiteId) },
+            status: { in: ["triggered", "escalated"] },
+        },
+        data: {
+            status: "resolved",
+            resolvedAt: new Date(),
+        },
     });
 
-    const allDown = recentTicks.length === CONSECUTIVE_FAILURES_THRESHOLD
-        && recentTicks.every(t => t.status === "DOWN");
-
-    // Fetch all active notification channels for this website
-    const channels = await prismaClient.websiteNotificationChannel.findMany({
-        where: { websiteId },
-        include: { notificationChannel: true }
-    });
-
-    if (channels.length === 0) return;
-
-    if (allDown) {
-        // Open or update an alert for each channel
-        for (const channel of channels) {
-            const existingAlert = await prismaClient.alerts.findFirst({
-                where: {
-                    websiteId,
-                    notificationChannelId: channel.notificationChannelId,
-                    status: { in: ["triggered", "escalated"] },
-                },
-            });
-
-            if (existingAlert) {
-                // Bump alert count
-                await prismaClient.alerts.update({
-                    where: { id: existingAlert.id },
-                    data: {
-                        alertCount: { increment: 1 },
-                        lastAlertedAt: new Date(),
-                        escalated: existingAlert.alertCount >= 3, // escalate after 3 bumps
-                        status: existingAlert.alertCount >= 3 ? "escalated" : "triggered",
-                    },
-                });
-                console.log(`Alert updated for website ${websiteId}`);
-            } else {
-                // Create a new alert
-                await prismaClient.alerts.create({
-                    data: {
-                        websiteId,
-                        notificationChannelId: channel.notificationChannelId,
-                        status: "triggered",
-                        alertCount: 1,
-                        lastAlertedAt: new Date(),
-                    },
-                });
-                console.log(`Alert created for website ${websiteId}`);
-            }
+    // Step 3 — fetch channels through the join table
+    const websiteChannels = await prismaClient.websiteNotificationChannel.findMany({
+        where: {
+            websiteId: { in: websitesDown.map(w => w.websiteId) }
+        },
+        include: {
+            notificationChannel: true
         }
-    } else if (currentStatus === "UP") {
-        // Resolve any open alerts
-        await prismaClient.alerts.updateMany({
+    });
+
+    if (websiteChannels.length === 0) return;
+
+    for (const wc of websiteChannels) {
+        const existing = await prismaClient.alerts.findFirst({
             where: {
-                websiteId,
+                websiteId: wc.websiteId,
+                notificationChannelId: wc.notificationChannelId,
                 status: { in: ["triggered", "escalated"] },
             },
-            data: {
-                status: "resolved",
-                resolvedAt: new Date(),
-            },
+            select: { alertCount: true }
         });
-        console.log(`Alerts resolved for website ${websiteId}`);
+
+        const newCount = (existing?.alertCount ?? 0) + 1;
+
+        await prismaClient.alerts.upsert({
+            where: {
+                websiteId_notificationChannelId: {
+                    websiteId: wc.websiteId,
+                    notificationChannelId: wc.notificationChannelId,
+                }
+            },
+            update: {
+                alertCount: { increment: 1 },
+                lastAlertedAt: new Date(),
+                escalated: newCount >= 3,
+                status: newCount >= 3 ? "escalated" : "triggered",
+            },
+            create: {
+                websiteId: wc.websiteId,
+                notificationChannelId: wc.notificationChannelId,
+                status: "triggered",
+                alertCount: 1,
+                lastAlertedAt: new Date(),
+            }
+        });
     }
 }
+
+setInterval(() => {
+    handleAlertLogic().catch(console.error);
+}, 60 * 1000);
+
+handleAlertLogic().catch(console.error);
