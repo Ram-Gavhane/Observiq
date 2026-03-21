@@ -3,10 +3,10 @@ import { client, xAddBulk } from "@repo/redisstreams";
 
 async function main() {
     const websites = await prismaClient.website.findMany({
-        select: {
-            url: true,
-            id: true,
-            regions: true,
+        where: {
+            nextCheckAt: {
+                lte: new Date()
+            }
         }
     });
 
@@ -15,6 +15,17 @@ async function main() {
         id: website.id,
         regions: website.regions,
     })));
+
+    await prismaClient.website.updateMany({
+        where: {
+            id: {
+                in: websites.map(w => w.id)
+            }
+        },
+        data: {
+            nextCheckAt: new Date(Date.now() + 1 * 60 * 1000)
+        }
+    });
 }
 
 async function createConsumerGroup() {

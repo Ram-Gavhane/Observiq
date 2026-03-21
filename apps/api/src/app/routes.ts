@@ -7,7 +7,7 @@ import incidentsRoutes from "../modules/incidents/incidents.routes";
 
 export const registerRoutes = (app: Express) => {
   app.get("/", (req, res) => {
-    res.send("Backend is up");
+    res.json({ message: "Backend is up" });
   });
 
   app.use(authRoutes);

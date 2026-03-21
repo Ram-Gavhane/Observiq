@@ -12,6 +12,7 @@ import {
   getWebsiteById,
   listWebsitesForUser,
 } from "./websites.service";
+import { xAddBulk } from "@repo/redisstreams";
 
 export const addWebsite = async (req: Request, res: Response) => {
   const { url, regions } = req.body;
@@ -24,6 +25,7 @@ export const addWebsite = async (req: Request, res: Response) => {
 
   try {
     const response = await createWebsite(url, regions, userId);
+    await xAddBulk([{ id: response.id, regions, url }])
     res.json({
       message: "Website added successfully",
       response,

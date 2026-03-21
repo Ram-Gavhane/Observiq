@@ -22,11 +22,13 @@ model User {
 }
 
 model Website {
-  id                          String                       @id @default(uuid())
-  url                         String
-  userId                      String
-  regions                     REGION[]
-  timeAdded                   DateTime                     @default(now())
+  id          String   @id @default(uuid())
+  url         String
+  userId      String
+  regions     REGION[]
+  timeAdded   DateTime @default(now())
+  nextCheckAt DateTime @default(now())
+
   ticks                       WebsiteTick[]
   user                        User                         @relation(fields: [userId], references: [id])
   statusPage                  StatusPage?

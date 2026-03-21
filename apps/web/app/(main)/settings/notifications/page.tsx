@@ -78,18 +78,28 @@ export default function NotificationChannelsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this channel?")) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      await axios.delete(process.env.NEXT_PUBLIC_API_URL + `/delete-channel/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchChannels();
-    } catch (err: unknown) {
-      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to delete channel");
-    }
+  const handleDelete = (id: string) => {
+    toast("Are you sure you want to delete this channel?", {
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          try {
+            const token = localStorage.getItem("token");
+            await axios.delete(process.env.NEXT_PUBLIC_API_URL + `/delete-channel/${id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            toast.success("Channel deleted successfully");
+            fetchChannels();
+          } catch (err: unknown) {
+            toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to delete channel");
+          }
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    });
   };
 
   if (loading) {
