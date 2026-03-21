@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { toast } from "sonner";
 import { 
   LucideAlertOctagon,
   LucideClock,
   LucideCheckCircle2,
   LucideAlertTriangle,
   LucideLoader2,
-  LucideAlertCircle,
   LucideGlobe
 } from "lucide-react";
 
@@ -32,7 +32,6 @@ interface Incident {
 export default function IncidentsPage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -52,7 +51,7 @@ export default function IncidentsPage() {
       });
       setIncidents(response.data);
     } catch (err: unknown) {
-      setError("Failed to fetch incidents");
+      toast.error("Failed to fetch incidents");
       console.error(err);
     } finally {
       setLoading(false);
@@ -100,13 +99,6 @@ export default function IncidentsPage() {
             <p className="text-muted-foreground mt-1">Track and manage service disruptions.</p>
           </div>
         </div>
-
-        {error && (
-          <div className="flex items-center gap-2 rounded-2xl bg-destructive/10 p-4 text-sm font-medium text-destructive">
-            <LucideAlertCircle className="h-4 w-4" />
-            {error}
-          </div>
-        )}
 
         {/* Incidents Table/Grid */}
         <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-sm">

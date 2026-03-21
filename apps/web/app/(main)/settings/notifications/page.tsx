@@ -10,6 +10,7 @@ import {
   LucideMail
 } from "lucide-react";
 import axios from "axios";
+import { toast } from "sonner";
 
 interface Channel {
   id: string;
@@ -22,7 +23,6 @@ interface Channel {
 export default function NotificationChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [adding, setAdding] = useState(false);
@@ -42,7 +42,7 @@ export default function NotificationChannelsPage() {
       });
       setChannels(response.data);
     } catch (err) {
-      setError("Failed to fetch notification channels");
+      toast.error("Failed to fetch notification channels");
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export default function NotificationChannelsPage() {
       setNewEmail("");
       fetchChannels();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to add channel");
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to add channel");
     } finally {
       setAdding(false);
     }
@@ -88,7 +88,7 @@ export default function NotificationChannelsPage() {
       });
       fetchChannels();
     } catch (err: unknown) {
-      alert((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to delete channel");
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to delete channel");
     }
   };
 
@@ -117,12 +117,6 @@ export default function NotificationChannelsPage() {
           Add Channel
         </button>
       </div>
-
-      {error && (
-        <div className="mb-6 rounded-md bg-destructive/15 p-4 text-destructive">
-          {error}
-        </div>
-      )}
 
       {channels.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border p-12 text-center">

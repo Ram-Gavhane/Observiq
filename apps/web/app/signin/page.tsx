@@ -4,18 +4,17 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LucideShieldCheck, LucideArrowRight, LucideLoader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SigninPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     try {
       const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/signin"
@@ -38,7 +37,7 @@ export default function SigninPage() {
 
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -86,8 +85,6 @@ export default function SigninPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-
-          {error && <p className="text-sm font-medium text-destructive">{error}</p>}
 
           <button
             type="submit"

@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LucidePlus, LucideLoader2, LucideGlobe } from "lucide-react";
 import axios from "axios";
+import { toast } from "sonner";
 
 interface AddWebsiteModalProps {
   onSuccess: () => void;
@@ -32,7 +33,6 @@ export function AddWebsiteModal({ onSuccess }: AddWebsiteModalProps) {
   const [url, setUrl] = useState("");
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleRegionChange = (regionId: string) => {
     setSelectedRegions((prev) =>
@@ -45,12 +45,12 @@ export function AddWebsiteModal({ onSuccess }: AddWebsiteModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedRegions.length === 0) {
-      setError("Please select at least one region.");
+      toast.error("Please select at least one region.");
       return;
     }
 
     setLoading(true);
-    setError("");
+    setLoading(true);
 
     try {
       const token = localStorage.getItem("token");
@@ -63,7 +63,7 @@ export function AddWebsiteModal({ onSuccess }: AddWebsiteModalProps) {
       setOpen(false);
       onSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to add website");
+      toast.error(err.response?.data?.message || "Failed to add website");
     } finally {
       setLoading(false);
     }
@@ -120,9 +120,6 @@ export function AddWebsiteModal({ onSuccess }: AddWebsiteModalProps) {
               ))}
             </div>
           </div>
-          {error && (
-            <p className="text-sm font-medium text-destructive px-1">{error}</p>
-          )}
           <DialogFooter className="mt-2">
             <Button 
               type="submit" 

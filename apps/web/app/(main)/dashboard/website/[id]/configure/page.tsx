@@ -11,6 +11,7 @@ import {
   LucideMail
 } from "lucide-react";
 import axios from "axios";
+import { toast } from "sonner";
 
 interface Channel {
   id: string;
@@ -33,7 +34,6 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
   const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,7 +64,7 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
         setSelectedChannels(initialSelections);
 
       } catch (err) {
-        setError("Failed to load configuration data");
+        toast.error("Failed to load configuration data");
       } finally {
         setLoading(false);
       }
@@ -95,7 +95,7 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
       
       router.push(`/dashboard/website/${id}`);
     } catch (err) {
-      setError("Failed to save configuration");
+      toast.error("Failed to save configuration");
       setSaving(false);
     }
   };
@@ -108,10 +108,10 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
     );
   }
 
-  if (error || !website) {
+  if (!website) {
     return (
       <div className="flex h-screen items-center justify-center flex-col gap-4">
-        <p className="text-destructive font-medium">{error || "Website not found"}</p>
+        <p className="text-destructive font-medium">Website not found</p>
         <Link href={`/dashboard/website/${id}`} className="text-sm font-semibold text-primary hover:underline">
           Go Back
         </Link>

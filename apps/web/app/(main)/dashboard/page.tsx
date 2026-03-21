@@ -8,10 +8,10 @@ import {
   LucideLoader2,
   LucideExternalLink,
   LucideCheckCircle2,
-  LucideAlertCircle,
   LucideMapPin
 } from "lucide-react";
 import axios from "axios";
+import { toast } from "sonner";
 import { AddWebsiteModal } from "@/components/AddWebsiteModal";
 
 interface Website {
@@ -24,7 +24,6 @@ interface Website {
 export default function DashboardPage() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -44,7 +43,7 @@ export default function DashboardPage() {
       });
       setWebsites(response.data.websites);
     } catch (err: unknown) {
-      setError("Failed to fetch websites");
+      toast.error("Failed to fetch websites");
     } finally {
       setLoading(false);
     }
@@ -70,13 +69,6 @@ export default function DashboardPage() {
             </div>
             <AddWebsiteModal onSuccess={fetchWebsites} />
           </div>
-
-          {error && (
-            <div className="flex items-center gap-2 rounded-2xl bg-destructive/10 p-4 text-sm font-medium text-destructive">
-              <LucideAlertCircle className="h-4 w-4" />
-              {error}
-            </div>
-          )}
 
           {/* Websites Table/Grid */}
           <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-sm">

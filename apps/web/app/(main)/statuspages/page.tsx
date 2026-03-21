@@ -7,11 +7,11 @@ import {
   LucideGlobe, 
   LucideLoader2,
   LucideExternalLink,
-  LucideAlertCircle,
   LucidePresentation,
   LucidePlus
 } from "lucide-react";
 import axios from "axios";
+import { toast } from "sonner";
 import { AddWebsiteModal } from "@/components/AddWebsiteModal";
 
 interface Website {
@@ -28,7 +28,6 @@ export default function StatusPages() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(false);
-  const [error, setError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -48,7 +47,7 @@ export default function StatusPages() {
       });
       setWebsites(response.data.websites);
     } catch (err: any) {
-      setError("Failed to fetch websites for status pages.");
+      toast.error("Failed to fetch websites for status pages.");
     } finally {
       setLoading(false);
     }
@@ -64,7 +63,7 @@ export default function StatusPages() {
       });
       fetchWebsites(); // Refresh to get the new status page reference
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to create status page.");
+      toast.error(err.response?.data?.message || "Failed to create status page.");
     }
     setRequesting(false);
   };
@@ -89,13 +88,6 @@ export default function StatusPages() {
             </div>
             <AddWebsiteModal onSuccess={fetchWebsites} />
           </div>
-
-          {error && (
-            <div className="flex items-center gap-2 rounded-2xl bg-destructive/10 p-4 text-sm font-medium text-destructive">
-              <LucideAlertCircle className="h-4 w-4" />
-              {error}
-            </div>
-          )}
 
           {/* Grid */}
           <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-sm">

@@ -17,6 +17,7 @@ import {
   LucideSettings
 } from "lucide-react";
 import axios from "axios";
+import { toast } from "sonner";
 import {
   LineChart,
   Line,
@@ -77,7 +78,6 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
   const [insights, setInsights] = useState<{uptime24h: string, uptime7d: string, responseTimeTrends: unknown[]} | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState("");
   const router = useRouter();  useEffect(() => {
     const interval = setInterval(() => {
       window.location.reload();
@@ -107,19 +107,15 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
       setTicks(response.data.latestTicks);
       setInsights(insightsResponse.data);
     } catch (err: unknown) {
-      setError("Failed to fetch website details");
+      toast.error("Failed to fetch website details");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this website? This action cannot be undone.")) {
-      return;
-    }
-
+  const executeDelete = async () => {
     setDeleting(true);
-    setError("");
+
     try {
       const token = localStorage.getItem("token");
       await axios.delete(process.env.NEXT_PUBLIC_API_URL + `/website/${id}`, {
@@ -127,9 +123,32 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
       });
       router.push("/dashboard");
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to delete website");
+      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to delete website");
       setDeleting(false);
     }
+  };
+
+  const handleDelete = () => {
+    toast("Delete Website", {
+      position: "top-center",
+      description: "Are you sure you want to delete this website? This action cannot be undone.",
+      duration: 6000,
+      classNames: {
+        toast: "bg-background/80 backdrop-blur-xl border border-border shadow-md rounded-2xl p-4 gap-2",
+        title: "text-sm font-semibold text-foreground tracking-tight",
+        description: "text-xs text-foreground mt-0.5 leading-relaxed",
+        actionButton: "bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors ml-auto",
+        cancelButton: "bg-secondary/50 text-secondary-foreground hover:bg-secondary text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors mr-2",
+      },
+      action: {
+        label: "Ok",
+        onClick: () => executeDelete(),
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      }
+    });
   };
 
   if (loading) {
@@ -140,10 +159,10 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  if (error || !website) {
+  if (!website) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-destructive font-medium">{error || "Website not found"}</p>
+        <p className="text-destructive font-medium">Website not found</p>
         <Link href="/dashboard" className="text-sm font-semibold text-primary hover:underline">
           Back to Dashboard
         </Link>
@@ -182,7 +201,10 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
           {/* New ActionBar & Stats */}
           <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center gap-6">
-              <button className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              <button 
+                onClick={() => toast.success("Test alert dispatched for " + website.url)} 
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
                 <LucideAlertTriangle className="h-4 w-4" />
                 <span>Send a test alert</span>
               </button>

@@ -5,18 +5,17 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LucideShieldCheck, LucideArrowRight, LucideLoader2 } from "lucide-react";
 import axios from "axios";
+import { toast } from "sonner";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     try {
       const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/signup", { email, password });
@@ -27,7 +26,7 @@ export default function SignupPage() {
 
       router.push("/signin");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to sign up");
+      toast.error(err?.response?.data?.message || "Failed to sign up");
     } finally {
       setLoading(false);
     }
@@ -75,8 +74,6 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-
-          {error && <p className="text-sm font-medium text-destructive">{error}</p>}
 
           <button
             type="submit"

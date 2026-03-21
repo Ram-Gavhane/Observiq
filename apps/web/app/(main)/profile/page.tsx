@@ -7,10 +7,10 @@ import {
   LucideUser,
   LucideMail,
   LucideGlobe,
-  LucideBell,
-  LucideAlertCircle
+  LucideBell
 } from "lucide-react";
 import axios from "axios";
+import { toast } from "sonner";
 
 interface UserProfile {
   id: string;
@@ -24,7 +24,6 @@ interface UserProfile {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -43,7 +42,7 @@ export default function ProfilePage() {
       });
       setProfile(response.data.user);
     } catch (err: unknown) {
-      setError("Failed to fetch profile details");
+      toast.error("Failed to fetch profile details");
     } finally {
       setLoading(false);
     }
@@ -64,13 +63,6 @@ export default function ProfilePage() {
           <h1 className="text-3xl font-extrabold tracking-tight">Your Profile</h1>
           <p className="text-muted-foreground mt-1">Manage your account information and view statistics.</p>
         </div>
-
-        {error && (
-          <div className="flex items-center gap-2 rounded-2xl bg-destructive/10 p-4 text-sm font-medium text-destructive">
-            <LucideAlertCircle className="h-4 w-4" />
-            {error}
-          </div>
-        )}
 
         {profile && (
           <div className="grid gap-6 md:grid-cols-2">
