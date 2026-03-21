@@ -11,7 +11,7 @@ type messageType = {
 }
 
 async function main() {
-    while (1) {
+    while (true) {
         const result = await xReadGroup(REGION, `${REGION}-worker-1`);
         if (!result) {
             continue;

@@ -1,9 +1,18 @@
 import { createClient } from 'redis';
 import { REGION as RegionEnum } from '@repo/db';
 
-const client = await createClient()
-    .on('error', err => console.log('Redis Client Error', err))
-    .connect();
+
+const client = createClient({
+    url: process.env.REDIS_URL
+});
+
+client.on("error", function (err) {
+    throw err;
+});
+async function connectRedis() {
+    await client.connect()
+}
+connectRedis();
 
 type websiteData = {
     url: string;
