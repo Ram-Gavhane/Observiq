@@ -4,7 +4,7 @@ import { NavBar } from "@/components/NavBar";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={false}>
       <AppSidebar />
       <div className="flex-1 w-full flex flex-col min-h-screen transition-all duration-300 ease-in-out bg-zinc-50/50 dark:bg-zinc-950">
         <NavBar />

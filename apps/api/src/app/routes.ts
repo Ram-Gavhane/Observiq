@@ -3,6 +3,7 @@ import authRoutes from "../modules/auth/auth.routes";
 import websitesRoutes from "../modules/websites/websites.routes";
 import statuspageRoutes from "../modules/statuspage/statuspage.routes";
 import notificationRoutes from "../modules/notification/notification.routes";
+import incidentsRoutes from "../modules/incidents/incidents.routes";
 
 export const registerRoutes = (app: Express) => {
   app.get("/", (req, res) => {
@@ -13,4 +14,5 @@ export const registerRoutes = (app: Express) => {
   app.use(websitesRoutes);
   app.use(statuspageRoutes);
   app.use(notificationRoutes);
+  app.use(incidentsRoutes);
 };

@@ -186,10 +186,10 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
                 <LucideAlertTriangle className="h-4 w-4" />
                 <span>Send a test alert</span>
               </button>
-              <button className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/incidents" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 <LucideShield className="h-4 w-4" />
                 <span>Incidents</span>
-              </button>
+              </Link>
               <button className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 <LucidePauseCircle className="h-4 w-4" />
                 <span>Pause this monitor</span>
