@@ -41,7 +41,7 @@ export function Footer() {
           <div>
             <h3 className="text-white font-semibold mb-6">Company</h3>
             <ul className="space-y-4">
-              <li><Link href="#" className="hover:text-white transition-colors">Work at Better Uptime</Link></li>
+              <li><Link href="#" className="hover:text-white transition-colors">Work at Observiq</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Engineering</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Security</Link></li>
             </ul>
@@ -65,7 +65,7 @@ export function Footer() {
           <div className="max-w-md">
             <div className="flex items-center gap-2 text-white font-bold text-xl mb-4">
               <LucideShieldCheck className="h-6 w-6" />
-              <span>Better Uptime</span>
+              <span>Observiq</span>
             </div>
             <p className="text-zinc-500">
               30x cheaper than Datadog. Predictable pricing.<br />
@@ -107,7 +107,7 @@ export function Footer() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <span>© 2026 Better Uptime, Inc.</span>
+            <span>© 2026 Observiq, Inc.</span>
             <LucideShieldCheck className="h-3 w-3" />
           </div>
         </div>

@@ -47,7 +47,7 @@ export default function SigninPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
       <Link href="/" className="mb-8 flex items-center gap-2 text-xl font-bold tracking-tight">
         <LucideShieldCheck className="h-6 w-6 text-primary" />
-        <span>Better Uptime</span>
+        <span>Observiq</span>
       </Link>
 
       <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 shadow-sm">

@@ -31,7 +31,7 @@ export function NavBar() {
       <div className="mx-auto flex h-16 w-full items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-            <span>Better Uptime</span>
+            <span>Observiq</span>
           </Link>
         </div>
         <div className="relative" ref={dropdownRef}>

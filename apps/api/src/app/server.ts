@@ -7,6 +7,7 @@ export const createServer = () => {
 
   const allowedOrigins = [
     "https://better-uptime-eight.vercel.app",
+    "https://observiq.vercel.app",
     "http://localhost:3000",
   ];
 

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Better Uptime",
+  title: "Observiq",
   description: "Application monitoring your App's Health",
 };
 

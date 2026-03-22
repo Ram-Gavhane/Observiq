@@ -203,7 +203,7 @@ export default function PublicStatusPage({ params }: { params: Promise<{ id: str
           <p className="text-xs text-muted-foreground font-medium">Powered by</p>
           <div className="flex items-center gap-2 text-primary font-bold">
             <LucideShieldCheck className="h-4 w-4" />
-            Better Uptime
+            Observiq
           </div>
         </div>
       </footer>
