@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { 
-  LucideShieldCheck, 
   Instagram, 
   Linkedin, 
   Twitter, 
@@ -64,7 +63,7 @@ export function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-white/10 pb-10 mb-6 gap-8">
           <div className="max-w-md">
             <div className="flex items-center gap-2 text-white font-bold text-xl mb-4">
-              <LucideShieldCheck className="h-6 w-6" />
+              <img src="/icon.svg" alt="Observiq" className="h-6 w-6" />
               <span>Observiq</span>
             </div>
             <p className="text-zinc-500">
@@ -108,7 +107,7 @@ export function Footer() {
           </div>
           <div className="flex items-center gap-1">
             <span>© 2026 Observiq, Inc.</span>
-            <LucideShieldCheck className="h-3 w-3" />
+            <img src="/icon.svg" alt="Observiq" className="h-3 w-3" />
           </div>
         </div>
       </div>

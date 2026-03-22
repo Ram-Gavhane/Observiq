@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LucideShieldCheck, LucideZap, LucideClock, LucideMail, LucideBarChart3, LucideFileJson, LucideCheck } from "lucide-react";
+import { LucideZap, LucideClock, LucideMail, LucideBarChart3, LucideFileJson, LucideCheck } from "lucide-react";
 import { Footer } from "@/components/Footer";
 
 export default function Home() {
@@ -9,7 +9,7 @@ export default function Home() {
       <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/70 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-2 text-xl font-bold tracking-tight">
-            <LucideShieldCheck className="h-6 w-6 text-primary" />
+            <img src="/icon.svg" alt="Observiq" className="h-6 w-6" />
             <span>Observiq</span>
           </div>
           <div className="hidden items-center gap-8 md:flex">

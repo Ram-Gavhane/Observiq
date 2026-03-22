@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   useSidebar
 } from "@/components/ui/sidebar";
-import { LucideShieldCheck, LucideGlobe, LucideLogOut, LucideActivity, LucideAlertOctagon, LucideSettings, PanelLeft } from "lucide-react";
+import { LucideGlobe, LucideLogOut, LucideActivity, LucideAlertOctagon, LucideSettings, PanelLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -33,7 +33,7 @@ export function AppSidebar() {
           
           {/* Expanded State Content */}
           <div className="flex items-center gap-2 text-xl font-bold tracking-tight group-data-[collapsible=icon]:hidden">
-            <LucideShieldCheck className="h-6 w-6 shrink-0 text-primary" />
+            <img src="/icon.svg" alt="Observiq" className="h-6 w-6 shrink-0" />
           </div>
           
           <button 
@@ -48,7 +48,7 @@ export function AppSidebar() {
             onClick={toggleSidebar}
             className="hidden group-data-[collapsible=icon]:flex group/toggle h-8 w-8 cursor-pointer items-center justify-center relative rounded-md hover:bg-sidebar-accent transition-colors"
           >
-            <LucideShieldCheck className="absolute h-6 w-6 text-primary transition-all duration-200 group-hover/toggle:opacity-0 group-hover/toggle:scale-75" />
+            <img src="/icon.svg" alt="Observiq" className="absolute h-6 w-6 transition-all duration-200 group-hover/toggle:opacity-0 group-hover/toggle:scale-75" />
             <PanelLeft className="absolute h-5 w-5 text-muted-foreground opacity-0 transition-all duration-200 group-hover/toggle:opacity-100 group-hover/toggle:scale-100 scale-75" />
           </div>
 

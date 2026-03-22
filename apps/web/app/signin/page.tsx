@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LucideShieldCheck, LucideArrowRight, LucideLoader2 } from "lucide-react";
+import { LucideArrowRight, LucideLoader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SigninPage() {
@@ -46,7 +46,7 @@ export default function SigninPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
       <Link href="/" className="mb-8 flex items-center gap-2 text-xl font-bold tracking-tight">
-        <LucideShieldCheck className="h-6 w-6 text-primary" />
+        <img src="/icon.svg" alt="Observiq" className="h-6 w-6" />
         <span>Observiq</span>
       </Link>
 

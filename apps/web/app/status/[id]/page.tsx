@@ -2,7 +2,6 @@
 
 import { useEffect, useState, use } from "react";
 import { 
-  LucideShieldCheck, 
   LucideClock, 
   LucideMapPin,
   LucideCheckCircle2,
@@ -113,7 +112,7 @@ export default function PublicStatusPage({ params }: { params: Promise<{ id: str
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex h-20 max-w-4xl items-center gap-4 px-6 md:px-8">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-            <LucideShieldCheck className="h-5 w-5 text-primary" />
+            <img src="/icon.svg" alt="Observiq" className="h-5 w-5" />
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">{statusPage.title}</h1>
@@ -202,7 +201,7 @@ export default function PublicStatusPage({ params }: { params: Promise<{ id: str
         <div className="mx-auto max-w-4xl px-6 py-8 md:px-8 flex flex-col items-center justify-center gap-2">
           <p className="text-xs text-muted-foreground font-medium">Powered by</p>
           <div className="flex items-center gap-2 text-primary font-bold">
-            <LucideShieldCheck className="h-4 w-4" />
+            <img src="/icon.svg" alt="Observiq" className="h-4 w-4" />
             Observiq
           </div>
         </div>

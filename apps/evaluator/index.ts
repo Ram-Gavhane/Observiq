@@ -6,33 +6,36 @@ async function handleAlertLogic() {
     const websitesDown = await prismaClient.$queryRaw<{ websiteId: string }[]>`
     SELECT "websiteId"
     FROM (
-        SELECT "websiteId", "status",
-               ROW_NUMBER() OVER (PARTITION BY "websiteId" ORDER BY "createdAt" DESC) as rn
+        SELECT "websiteId", "status", "region",
+               ROW_NUMBER() OVER (PARTITION BY "websiteId", "region" ORDER BY "createdAt" DESC) as rn
         FROM "WebsiteTick"
     ) ranked
     WHERE rn <= ${CONSECUTIVE_FAILURES_THRESHOLD}
-    GROUP BY "websiteId"
+    GROUP BY "websiteId", "region"
     HAVING COUNT(*) = ${CONSECUTIVE_FAILURES_THRESHOLD}
-       AND SUM(CASE WHEN status = 'DOWN' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
+       AND SUM(CASE WHEN "status" = 'DOWN' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
 `;
 
     // Step 2 — find websites that are back UP, resolve their alerts
     const websitesUp = await prismaClient.$queryRaw<{ websiteId: string }[]>`
     SELECT "websiteId"
     FROM (
-        SELECT "websiteId", "status",
-               ROW_NUMBER() OVER (PARTITION BY "websiteId" ORDER BY "createdAt" DESC) as rn
+        SELECT "websiteId", "status", "region",
+               ROW_NUMBER() OVER (PARTITION BY "websiteId", "region" ORDER BY "createdAt" DESC) as rn
         FROM "WebsiteTick"
     ) ranked
     WHERE rn <= ${CONSECUTIVE_FAILURES_THRESHOLD}
-    GROUP BY "websiteId"
+    GROUP BY "websiteId", "region"
     HAVING COUNT(*) = ${CONSECUTIVE_FAILURES_THRESHOLD}
-       AND SUM(CASE WHEN status = 'UP' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
+       AND SUM(CASE WHEN "status" = 'UP' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
 `;
+
+    const downWebsiteIds = [...new Set(websitesDown.map(w => w.websiteId))]
+    const upWebsiteIds = [...new Set(websitesUp.map(w => w.websiteId))].filter(id => !downWebsiteIds.includes(id))
 
     const resolvedAlerts = await prismaClient.alerts.findMany({
         where: {
-            websiteId: { in: websitesUp.map(w => w.websiteId) },
+            websiteId: { in: upWebsiteIds },
             status: { in: ["triggered", "escalated"] },
         },
         select: { id: true }
@@ -54,7 +57,7 @@ async function handleAlertLogic() {
     // Step 3 — fetch channels through the join table
     const websiteChannels = await prismaClient.websiteNotificationChannel.findMany({
         where: {
-            websiteId: { in: websitesDown.map(w => w.websiteId) }
+            websiteId: { in: downWebsiteIds }
         },
         include: {
             notificationChannel: true
