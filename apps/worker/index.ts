@@ -12,7 +12,7 @@ type messageType = {
 
 async function main() {
     while (true) {
-        const result = await xReadGroup(REGION, `${REGION}-worker-1`);
+        const result = await xReadGroup(REGION, `${REGION}-worker-1`, 5000);
         if (!result) {
             continue;
         }
@@ -30,7 +30,7 @@ async function main() {
 
         await Promise.all(promises);
 
-        xAckBulk(REGION, result.map(({ id }) => id));
+        xAckBulk(REGION, regionSpecificMessages.map(({ id }) => id));
     }
 }
 

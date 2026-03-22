@@ -4,7 +4,6 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev1": "bun run index.ts",
     "dev": "concurrently \"REGION=US bun run index.ts\" \"REGION=EU bun run index.ts\" \"REGION=INDIA bun run index.ts\""
   },
   "dependencies": {

@@ -56,12 +56,13 @@ async function xAddBulk(websites: websiteData[]) {
     }
 }
 
-async function xReadGroup(consumerGroupId: string, workerId: string): Promise<messageType[] | undefined> {
+async function xReadGroup(consumerGroupId: string, workerId: string, waitingPeriod: number): Promise<messageType[] | undefined> {
     const redisStreamResult = await client.xReadGroup(consumerGroupId, workerId, {
         key: STREAM_NAME,
         id: '>'
     }, {
-        COUNT: 5
+        COUNT: 5,
+        BLOCK: waitingPeriod
     }
     )
     const messages = redisStreamResult as redisStreamResultType[] | undefined;
