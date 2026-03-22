@@ -65,7 +65,7 @@ export function Footer() {
           <div className="max-w-md">
             <div className="flex items-center gap-2 text-white font-bold text-xl mb-4">
               <LucideShieldCheck className="h-6 w-6" />
-              <span>Better Uptime</span>
+              <span>Observiq</span>
             </div>
             <p className="text-zinc-500">
               30x cheaper than Datadog. Predictable pricing.<br />
@@ -76,7 +76,7 @@ export function Footer() {
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-12 w-full md:w-auto">
             <div className="flex flex-col md:flex-row gap-4 md:gap-8 text-zinc-400">
               <span>+1 (628) 900-3830</span>
-              <span>hello@betteruptime.com</span>
+              <span>[EMAIL_ADDRESS]</span>
             </div>
             <div className="flex items-center gap-5 text-zinc-400">
               <Link href="https://www.instagram.com/_ram_gavhane_/" target="_blank" className="hover:text-white transition-colors">
@@ -107,7 +107,7 @@ export function Footer() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <span>© 2026 Better Uptime, Inc.</span>
+            <span>© 2026 Observiq, Inc.</span>
             <LucideShieldCheck className="h-3 w-3" />
           </div>
         </div>

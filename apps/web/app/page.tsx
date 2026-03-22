@@ -10,7 +10,7 @@ export default function Home() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-2 text-xl font-bold tracking-tight">
             <LucideShieldCheck className="h-6 w-6 text-primary" />
-            <span>Better Uptime</span>
+            <span>Observiq</span>
           </div>
           <div className="hidden items-center gap-8 md:flex">
             <Link href="#services" className="text-sm font-medium opacity-60 transition-opacity hover:opacity-100">Services</Link>

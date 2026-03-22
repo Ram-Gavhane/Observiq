@@ -8,7 +8,8 @@ import {
   LucideLoader2,
   LucideExternalLink,
   LucidePresentation,
-  LucidePlus
+  LucidePlus,
+  LucideTrash2
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -27,7 +28,8 @@ interface Website {
 export default function StatusPages() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [loading, setLoading] = useState(true);
-  const [requesting, setRequesting] = useState(false);
+  const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -54,18 +56,33 @@ export default function StatusPages() {
   };
 
   const handleCreateStatusPage = async (websiteId: string) => {
-    setRequesting(true);
-    if (!confirm("Create a public status page for this website?")) return;
+    setRequestingId(websiteId);
     try {
       const token = localStorage.getItem("token");
       await axios.post(process.env.NEXT_PUBLIC_API_URL + `/website/${websiteId}/statuspage`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      fetchWebsites(); // Refresh to get the new status page reference
+      toast.success("Status page created successfully!");
+      fetchWebsites();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to create status page.");
     }
-    setRequesting(false);
+    setRequestingId(null);
+  };
+
+  const handleDeleteStatusPage = async (websiteId: string) => {
+    setDeletingId(websiteId);
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(process.env.NEXT_PUBLIC_API_URL + `/website/${websiteId}/statuspage`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success("Status page deleted successfully!");
+      fetchWebsites();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete status page.");
+    }
+    setDeletingId(null);
   };
 
   if (loading) {
@@ -105,7 +122,7 @@ export default function StatusPages() {
                   <thead>
                     <tr className="border-b border-border bg-zinc-50/50 dark:bg-zinc-900/50">
                       <th className="px-6 py-4 font-bold">Website</th>
-                      <th className="px-6 py-4 font-bold text-right">Action</th>
+                      <th className="px-6 py-4 font-bold text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -121,22 +138,40 @@ export default function StatusPages() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           {website.statusPage ? (
-                            <Link
-                              href={`/status/${website.id}`}
-                              target="_blank"
-                              className="inline-flex h-8 items-center gap-2 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary hover:bg-primary/20 transition-all"
-                            >
-                              <LucidePresentation className="h-3 w-3" />
-                              View Status Page
-                              <LucideExternalLink className="h-3 w-3 opacity-50" />
-                            </Link>
+                            <div className="flex items-center gap-2 justify-end">
+                              <Link
+                                href={`/status/${website.id}`}
+                                target="_blank"
+                                className="inline-flex h-8 items-center gap-2 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary hover:bg-primary/20 transition-all"
+                              >
+                                <LucidePresentation className="h-3 w-3" />
+                                View Status Page
+                                <LucideExternalLink className="h-3 w-3 opacity-50" />
+                              </Link>
+                              <button
+                                onClick={() => handleDeleteStatusPage(website.id)}
+                                disabled={deletingId === website.id}
+                                className="inline-flex h-8 items-center gap-2 rounded-full border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 px-3 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 transition-all disabled:opacity-50"
+                              >
+                                {deletingId === website.id ? (
+                                  <LucideLoader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <LucideTrash2 className="h-3 w-3" />
+                                )}
+                              </button>
+                            </div>
                           ) : (
                             <button
                               onClick={() => handleCreateStatusPage(website.id)}
-                              className="inline-flex h-8 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+                              disabled={requestingId === website.id}
+                              className="inline-flex h-8 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all disabled:opacity-50"
                             >
-                              <LucidePlus className="h-3 w-3" />
-                              {requesting ? <LucideLoader2 className="h-3 w-3 animate-spin" /> : "Create Status Page"}
+                              {requestingId === website.id ? (
+                                <LucideLoader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <LucidePlus className="h-3 w-3" />
+                              )}
+                              Create Status Page
                             </button>
                           )}
                         </td>

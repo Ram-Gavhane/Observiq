@@ -30,3 +30,9 @@ export const getLatestTicks = async (websiteId: string, take = 500) => {
     orderBy: { createdAt: "desc" },
   });
 };
+
+export const deleteStatusPage = async (websiteId: string) => {
+  return prismaClient.statusPage.delete({
+    where: { websiteId },
+  });
+};

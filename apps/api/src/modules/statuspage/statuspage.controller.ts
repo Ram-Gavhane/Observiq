@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import {
   createStatusPage,
+  deleteStatusPage,
   getLatestTicks,
   getStatusPageByWebsiteId,
   getWebsiteById,
@@ -57,3 +58,25 @@ export const getStatusPage = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch status page" });
   }
 };
+
+export const deleteWebsiteStatusPage = async (req: Request, res: Response) => {
+  const websiteId = req.params.websiteId as string;
+
+  const website = await getWebsiteById(websiteId);
+
+  if (!website || website.userId !== req.userId) {
+    return res.status(403).json({ message: "Unauthorized or website not found" });
+  }
+
+  try {
+    const statusPage = await deleteStatusPage(websiteId);
+
+    res.json({
+      message: "Status page deleted successfully",
+      statusPage,
+    });
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to delete status page" });
+  }
+}
