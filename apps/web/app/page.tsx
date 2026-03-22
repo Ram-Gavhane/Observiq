@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LucideShieldCheck, LucideZap, LucideClock, LucideMail, LucideBarChart3, LucideFileJson, LucideGithub, FileBoxIcon } from "lucide-react";
+import { LucideShieldCheck, LucideZap, LucideClock, LucideMail, LucideBarChart3, LucideFileJson, LucideCheck } from "lucide-react";
 import { Footer } from "@/components/Footer";
 
 export default function Home() {
@@ -10,10 +10,11 @@ export default function Home() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-2 text-xl font-bold tracking-tight">
             <LucideShieldCheck className="h-6 w-6 text-primary" />
-            <span>Observiq</span>
+            <span>Better Uptime</span>
           </div>
           <div className="hidden items-center gap-8 md:flex">
             <Link href="#services" className="text-sm font-medium opacity-60 transition-opacity hover:opacity-100">Services</Link>
+            <Link href="#pricing" className="text-sm font-medium opacity-60 transition-opacity hover:opacity-100">Pricing</Link>
             <Link href="#upcoming" className="text-sm font-medium opacity-60 transition-opacity hover:opacity-100">Upcoming</Link>
              <div className="flex gap-3 items-center"><Link href="/signin" className="text-sm font-medium opacity-60 transition-opacity hover:opacity-100">
                 Sign In
@@ -131,6 +132,89 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section id="pricing" className="border-t border-border bg-zinc-50/50 py-24 px-6 dark:bg-zinc-900/10">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-16 flex flex-col items-center text-center">
+              <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Simple, Transparent Pricing</h2>
+              <p className="mt-4 max-w-2xl text-lg text-muted-foreground">Start free and scale as you grow. No hidden fees, no surprises.</p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-3">
+              {/* Hobby */}
+              <div className="relative flex flex-col rounded-3xl border border-border bg-card p-8 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5">
+                <h3 className="text-lg font-bold">Hobby</h3>
+                <p className="mt-1 text-sm text-muted-foreground">For personal projects and side hustles.</p>
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold">$0</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+                <ul className="mt-8 flex flex-col gap-3 text-sm">
+                  {["5 monitors", "5-minute check interval", "1 status page", "Email notifications", "7-day log retention"].map((f, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <LucideCheck className="h-4 w-4 text-emerald-500" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto pt-8">
+                  <Link href="/signup" className="flex h-11 w-full items-center justify-center rounded-2xl border border-border bg-background text-sm font-bold transition-all hover:bg-accent">
+                    Get Started Free
+                  </Link>
+                </div>
+              </div>
+
+              {/* Pro */}
+              <div className="relative flex flex-col rounded-3xl border-2 border-indigo-500 bg-card p-8 shadow-xl shadow-indigo-500/10 transition-all hover:-translate-y-1">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-indigo-500 px-4 py-1 text-[11px] font-bold uppercase tracking-wider text-white">
+                  Most Popular
+                </div>
+                <h3 className="text-lg font-bold">Pro</h3>
+                <p className="mt-1 text-sm text-muted-foreground">For growing teams and businesses.</p>
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold">$29</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+                <ul className="mt-8 flex flex-col gap-3 text-sm">
+                  {["50 monitors", "1-minute check interval", "Unlimited status pages", "SMS & email notifications", "30-day log retention", "Custom domains", "Team collaboration"].map((f, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <LucideCheck className="h-4 w-4 text-indigo-500" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto pt-8">
+                  <Link href="/signup" className="flex h-11 w-full items-center justify-center rounded-2xl bg-indigo-500 text-sm font-bold text-white transition-all hover:bg-indigo-600">
+                    Start Free Trial
+                  </Link>
+                </div>
+              </div>
+
+              {/* Enterprise */}
+              <div className="relative flex flex-col rounded-3xl border border-border bg-card p-8 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/5">
+                <h3 className="text-lg font-bold">Enterprise</h3>
+                <p className="mt-1 text-sm text-muted-foreground">For large-scale infrastructure.</p>
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold">$99</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+                <ul className="mt-8 flex flex-col gap-3 text-sm">
+                  {["Unlimited monitors", "30-second check interval", "Unlimited status pages", "SMS, voice & push alerts", "90-day log retention", "SSO & SAML", "Priority support", "Custom SLAs"].map((f, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <LucideCheck className="h-4 w-4 text-emerald-500" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto pt-8">
+                  <Link href="/signup" className="flex h-11 w-full items-center justify-center rounded-2xl border border-border bg-background text-sm font-bold transition-all hover:bg-accent">
+                    Contact Sales
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>

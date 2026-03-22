@@ -65,7 +65,7 @@ export function Footer() {
           <div className="max-w-md">
             <div className="flex items-center gap-2 text-white font-bold text-xl mb-4">
               <LucideShieldCheck className="h-6 w-6" />
-              <span>Observiq</span>
+              <span>Better Uptime</span>
             </div>
             <p className="text-zinc-500">
               30x cheaper than Datadog. Predictable pricing.<br />
@@ -107,7 +107,7 @@ export function Footer() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <span>© 2026 Observiq, Inc.</span>
+            <span>© 2026 Better Uptime, Inc.</span>
             <LucideShieldCheck className="h-3 w-3" />
           </div>
         </div>
