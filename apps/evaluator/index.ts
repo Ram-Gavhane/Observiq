@@ -30,15 +30,25 @@ async function handleAlertLogic() {
        AND SUM(CASE WHEN status = 'UP' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
 `;
 
-    await prismaClient.alerts.updateMany({
+    const resolvedAlerts = await prismaClient.alerts.findMany({
         where: {
             websiteId: { in: websitesUp.map(w => w.websiteId) },
             status: { in: ["triggered", "escalated"] },
         },
-        data: {
-            status: "resolved",
-            resolvedAt: new Date(),
-        },
+        select: { id: true }
+    });
+
+    await prismaClient.alerts.updateMany({
+        where: { id: { in: resolvedAlerts.map(a => a.id) } },
+        data: { status: "resolved", resolvedAt: new Date() },
+    });
+
+    await prismaClient.incidentEvent.createMany({
+        data: resolvedAlerts.map(alert => ({
+            alertId: alert.id,
+            type: "incident_resolved",
+            message: "Website is back UP — incident resolved",
+        }))
     });
 
     // Step 3 — fetch channels through the join table
@@ -65,7 +75,7 @@ async function handleAlertLogic() {
 
         const newCount = (existing?.alertCount ?? 0) + 1;
 
-        await prismaClient.alerts.upsert({
+        const upsertedAlert = await prismaClient.alerts.upsert({
             where: {
                 websiteId_notificationChannelId: {
                     websiteId: wc.websiteId,
@@ -86,6 +96,28 @@ async function handleAlertLogic() {
                 lastAlertedAt: new Date(),
             }
         });
+
+        if (!existing) {
+            // freshly created
+            await prismaClient.incidentEvent.create({
+                data: {
+                    alertId: upsertedAlert.id,
+                    type: "incident_created",
+                    message: "Incident detected — website is DOWN",
+                }
+            });
+        } else {
+            // updated — alert sent or escalated
+            await prismaClient.incidentEvent.create({
+                data: {
+                    alertId: upsertedAlert.id,
+                    type: newCount >= 3 ? "alert_escalated" : "alert_sent",
+                    message: newCount >= 3
+                        ? "Escalated to on-call after 3 alerts"
+                        : `Alert #${newCount} sent via ${wc.notificationChannel.type}`,
+                }
+            });
+        }
     }
 }
 
