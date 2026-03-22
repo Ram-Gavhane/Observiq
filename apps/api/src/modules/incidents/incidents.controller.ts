@@ -20,3 +20,21 @@ export const getIncidents = async (req: Request, res: Response) => {
 
     res.json(incidents);
 }
+
+export const getIncidentTimeline = async (req: Request, res: Response) => {
+    const alertId = req.params.alertId as string;
+
+    const events = await prismaClient.incidentEvent.findMany({
+        where: {
+            alertId
+        },
+        include: {
+            alert: true,
+        },
+        orderBy: {
+            createdAt: "asc"
+        }
+    });
+
+    res.json(events);
+}
