@@ -16,7 +16,7 @@ async function handleAlertLogic() {
        AND SUM(CASE WHEN "status" = 'DOWN' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
 `;
 
-    // Step 2 — find websites that are back UP, resolve their alerts
+    
     const websitesUp = await prismaClient.$queryRaw<{ websiteId: string }[]>`
     SELECT "websiteId"
     FROM (
@@ -54,7 +54,6 @@ async function handleAlertLogic() {
         }))
     });
 
-    // Step 3 — fetch channels through the join table
     const websiteChannels = await prismaClient.websiteNotificationChannel.findMany({
         where: {
             websiteId: { in: downWebsiteIds }

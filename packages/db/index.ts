@@ -9,3 +9,4 @@ const prismaClient = new PrismaClient({ adapter });
 
 export default prismaClient;
 export { REGION } from "./generated/prisma/enums";
+export type { NotificationChannel } from "./generated/prisma/client"
