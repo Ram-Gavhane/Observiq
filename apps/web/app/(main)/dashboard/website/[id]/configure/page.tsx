@@ -8,9 +8,11 @@ import {
   LucideLoader2,
   LucideBellRing,
   LucideCheck,
-  LucideMail,
-  LucideHash
+  LucideMail
 } from "lucide-react";
+import Image from "next/image";
+import SlackIcon from "@/app/slack-svgrepo-com.svg";
+import DiscordIcon from "@/app/discord-svgrepo-com.svg";
 import axios from "axios";
 import { toast } from "sonner";
 
@@ -105,7 +107,7 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
     if (channel.type === "email") {
       return (channel.config as any)?.email ?? "—";
     }
-    if (channel.type === "slack") {
+    if (channel.type === "slack" || channel.type === "discord") {
       const url = (channel.config as any)?.webhookUrl ?? "";
       if (url.length > 40) {
         return url.slice(0, 30) + "•••" + url.slice(-8);
@@ -121,7 +123,9 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
       case "email":
         return <LucideMail className={cls} />;
       case "slack":
-        return <LucideHash className={cls} />;
+        return <Image src={SlackIcon} alt="Slack" className={`h-4 w-4 ${isSelected ? "" : "opacity-60"}`} />;
+      case "discord":
+        return <Image src={DiscordIcon} alt="Discord" className={`h-4 w-4 ${isSelected ? "" : "opacity-60"}`} />;
       default:
         return <LucideBellRing className={cls} />;
     }

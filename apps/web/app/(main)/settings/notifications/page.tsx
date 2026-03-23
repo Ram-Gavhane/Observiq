@@ -7,13 +7,15 @@ import {
   LucidePlus,
   LucideTrash2,
   LucideLoader2,
-  LucideMail,
-  LucideHash
+  LucideMail
 } from "lucide-react";
+import Image from "next/image";
+import SlackIcon from "@/app/slack-svgrepo-com.svg";
+import DiscordIcon from "@/app/discord-svgrepo-com.svg";
 import axios from "axios";
 import { toast } from "sonner";
 
-type ChannelType = "email" | "slack";
+type ChannelType = "email" | "slack" | "discord";
 
 interface Channel {
   id: string;
@@ -61,16 +63,18 @@ export default function NotificationChannelsPage() {
     e.preventDefault();
 
     if (channelType === "email" && !newEmail) return;
-    if (channelType === "slack" && !newWebhookUrl) return;
+    if ((channelType === "slack" || channelType === "discord") && !newWebhookUrl) return;
 
     setAdding(true);
     try {
       const token = localStorage.getItem("token");
 
-      const payload =
-        channelType === "email"
-          ? { type: "email", config: { email: newEmail } }
-          : { type: "slack", config: { webhookUrl: newWebhookUrl } };
+      let payload;
+      if (channelType === "email") {
+        payload = { type: "email", config: { email: newEmail } };
+      } else {
+        payload = { type: channelType, config: { webhookUrl: newWebhookUrl } };
+      }
 
       await axios.post(
         process.env.NEXT_PUBLIC_API_URL + "/create-channel", 
@@ -118,7 +122,7 @@ export default function NotificationChannelsPage() {
     if (channel.type === "email") {
       return (channel.config as any)?.email ?? "—";
     }
-    if (channel.type === "slack") {
+    if (channel.type === "slack" || channel.type === "discord") {
       const url = (channel.config as any)?.webhookUrl ?? "";
       // Mask most of the webhook URL for security
       if (url.length > 40) {
@@ -134,7 +138,9 @@ export default function NotificationChannelsPage() {
       case "email":
         return <LucideMail className="h-5 w-5 text-primary" />;
       case "slack":
-        return <LucideHash className="h-5 w-5 text-primary" />;
+        return <Image src={SlackIcon} alt="Slack" className="h-5 w-5" />;
+      case "discord":
+        return <Image src={DiscordIcon} alt="Discord" className="h-5 w-5" />;
       default:
         return <LucideBellRing className="h-5 w-5 text-primary" />;
     }
@@ -173,7 +179,7 @@ export default function NotificationChannelsPage() {
           </div>
           <h3 className="text-lg font-semibold">No channels configured</h3>
           <p className="mb-6 mt-2 text-sm text-muted-foreground max-w-sm">
-            You haven't added any notification channels yet. Add an email or Slack webhook to get started.
+            You haven't added any notification channels yet. Add an email, Slack, or Discord webhook to get started.
           </p>
           <button
             onClick={() => setShowAddModal(true)}
@@ -249,8 +255,20 @@ export default function NotificationChannelsPage() {
                     : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
               >
-                <LucideHash className="h-4 w-4" />
+                <Image src={SlackIcon} alt="Slack" className="h-4 w-4" />
                 Slack
+              </button>
+              <button
+                type="button"
+                onClick={() => setChannelType("discord")}
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                  channelType === "discord"
+                    ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                    : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                }`}
+              >
+                <Image src={DiscordIcon} alt="Discord" className="h-4 w-4" />
+                Discord
               </button>
             </div>
 
@@ -272,27 +290,27 @@ export default function NotificationChannelsPage() {
               ) : (
                 <div className="mb-4">
                   <label className="mb-2 block text-sm font-medium">
-                    Slack Webhook URL
+                    {channelType === "slack" ? "Slack" : "Discord"} Webhook URL
                   </label>
                   <input
                     type="url"
                     required
                     value={newWebhookUrl}
                     onChange={(e) => setNewWebhookUrl(e.target.value)}
-                    placeholder="https://hooks.slack.com/services/T.../B.../xxxx"
+                    placeholder={channelType === "slack" ? "https://hooks.slack.com/services/..." : "https://discord.com/api/webhooks/..."}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Create an{" "}
+                    Create a{" "}
                     <a
-                      href="https://api.slack.com/messaging/webhooks"
+                      href={channelType === "slack" ? "https://api.slack.com/messaging/webhooks" : "https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary underline underline-offset-2 hover:text-primary/80"
                     >
-                      Incoming Webhook
+                      Webhook
                     </a>{" "}
-                    in your Slack workspace to get this URL.
+                    in your {channelType === "slack" ? "Slack workspace" : "Discord server"} to get this URL.
                   </p>
                 </div>
               )}
