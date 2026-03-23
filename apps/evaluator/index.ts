@@ -55,13 +55,32 @@ async function handleAlertLogic() {
         }))
     });
 
+    const websiteChannelsResolved = await prismaClient.websiteNotificationChannel.findMany({
+        where: {
+            websiteId: { in: upWebsiteIds }
+        },
+        include: {
+            notificationChannel: true,
+            website: true
+        }
+    });
+
+    for (const wc of websiteChannelsResolved) {
+        await sendNotification({
+            eventType: "incident_resolved",
+            websiteUrl: wc.website.url,
+            message: "Website is back UP — incident resolved",
+            channel: wc.notificationChannel
+        });
+    }
+
     const websiteChannels = await prismaClient.websiteNotificationChannel.findMany({
         where: {
             websiteId: { in: downWebsiteIds }
         },
         include: {
             notificationChannel: true,
-            website:true
+            website: true
         }
     });
 
@@ -111,10 +130,10 @@ async function handleAlertLogic() {
                 }
             });
             await sendNotification({
-                eventType:"incident_created",
-                websiteUrl:wc.website.url,
-                message:"Incident detected — website is DOWN",
-                channel:wc.notificationChannel
+                eventType: "incident_created",
+                websiteUrl: wc.website.url,
+                message: "Incident detected — website is DOWN",
+                channel: wc.notificationChannel
             });
         } else {
             // updated — alert sent or escalated
@@ -127,19 +146,19 @@ async function handleAlertLogic() {
                         : `Alert #${newCount} sent via ${wc.notificationChannel.type}`,
                 }
             });
-            if(newCount<3){
+            if (newCount < 3) {
                 await sendNotification({
-                    eventType:"alert_sent",
-                    websiteUrl:wc.website.url,
-                    message:`Alert #${newCount} sent via ${wc.notificationChannel.type}`,
-                    channel:wc.notificationChannel
+                    eventType: "alert_sent",
+                    websiteUrl: wc.website.url,
+                    message: `Alert #${newCount} sent via ${wc.notificationChannel.type}`,
+                    channel: wc.notificationChannel
                 });
-            }else{
+            } else {
                 await sendNotification({
-                    eventType:"alert_escalated",
-                    websiteUrl:wc.website.url,
-                    message:"Escalated to on-call after 3 alerts",
-                    channel:wc.notificationChannel
+                    eventType: "alert_escalated",
+                    websiteUrl: wc.website.url,
+                    message: "Escalated to on-call after 3 alerts",
+                    channel: wc.notificationChannel
                 });
             }
         }
