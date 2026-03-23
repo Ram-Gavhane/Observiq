@@ -1,5 +1,6 @@
+import { sendDiscordAlert } from "./discord";
 import { sendEmail } from "./email";
-import { sendSlackalert } from "./slack";
+import { sendSlackAlert } from "./slack";
 import type { NotificationPayload } from "./types";
 export async function sendNotification(notificationPayload: NotificationPayload){
     switch (notificationPayload.channel.type){
@@ -7,10 +8,12 @@ export async function sendNotification(notificationPayload: NotificationPayload)
             await sendEmail(notificationPayload)
             break;
         case "slack":
-            await sendSlackalert(notificationPayload);
+            await sendSlackAlert(notificationPayload);
             break;
         case "discord":
+            await sendDiscordAlert(notificationPayload);
             break;
+        default:
+            console.log("no valid channel")
         }
-        
 }

@@ -1,12 +1,14 @@
-import type { NotificationPayload, SlackConfig } from "../types";
+import type { DiscordConfig, NotificationPayload } from "../types";
 
-export async function sendSlackAlert(notificationPayload: NotificationPayload) {
-    const config = notificationPayload.channel.config as SlackConfig;
+export async function sendDiscordAlert(notificationPayload: NotificationPayload){
+    const config = notificationPayload.channel.config as DiscordConfig;
     const webhookUrl = config.webhookUrl;
-    if (!webhookUrl) {
-        console.warn("Slack webhook URL missing");
+
+    if(!webhookUrl){
+        console.warn("Discord webhook URL missing");
         return;
     }
+
     const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -15,11 +17,10 @@ export async function sendSlackAlert(notificationPayload: NotificationPayload) {
         })
     })
 
-
-    if (!response.ok) {
+    if(!response.ok){
         console.error("Slack webhook failed", response.status, response.statusText);
         return;
     }
 
-    console.log("Slack alert sent successfully");
+    console.log("Discord alert sent successfully")
 }
