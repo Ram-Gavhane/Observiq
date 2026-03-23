@@ -7,10 +7,13 @@ import {
   LucidePlus,
   LucideTrash2,
   LucideLoader2,
-  LucideMail
+  LucideMail,
+  LucideHash
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
+
+type ChannelType = "email" | "slack";
 
 interface Channel {
   id: string;
@@ -24,7 +27,9 @@ export default function NotificationChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [channelType, setChannelType] = useState<ChannelType>("email");
   const [newEmail, setNewEmail] = useState("");
+  const [newWebhookUrl, setNewWebhookUrl] = useState("");
   const [adding, setAdding] = useState(false);
   
   const router = useRouter();
@@ -54,22 +59,29 @@ export default function NotificationChannelsPage() {
 
   const handleAddChannel = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEmail) return;
+
+    if (channelType === "email" && !newEmail) return;
+    if (channelType === "slack" && !newWebhookUrl) return;
 
     setAdding(true);
     try {
       const token = localStorage.getItem("token");
+
+      const payload =
+        channelType === "email"
+          ? { type: "email", config: { email: newEmail } }
+          : { type: "slack", config: { webhookUrl: newWebhookUrl } };
+
       await axios.post(
         process.env.NEXT_PUBLIC_API_URL + "/create-channel", 
-        {
-          type: "email",
-          config: { email: newEmail }
-        },
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       setShowAddModal(false);
       setNewEmail("");
+      setNewWebhookUrl("");
+      setChannelType("email");
       fetchChannels();
     } catch (err: unknown) {
       toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to add channel");
@@ -100,6 +112,32 @@ export default function NotificationChannelsPage() {
         onClick: () => {},
       },
     });
+  };
+
+  const getChannelDisplay = (channel: Channel) => {
+    if (channel.type === "email") {
+      return (channel.config as any)?.email ?? "—";
+    }
+    if (channel.type === "slack") {
+      const url = (channel.config as any)?.webhookUrl ?? "";
+      // Mask most of the webhook URL for security
+      if (url.length > 40) {
+        return url.slice(0, 30) + "•••" + url.slice(-8);
+      }
+      return url || "—";
+    }
+    return JSON.stringify(channel.config);
+  };
+
+  const getChannelIcon = (type: string) => {
+    switch (type) {
+      case "email":
+        return <LucideMail className="h-5 w-5 text-primary" />;
+      case "slack":
+        return <LucideHash className="h-5 w-5 text-primary" />;
+      default:
+        return <LucideBellRing className="h-5 w-5 text-primary" />;
+    }
   };
 
   if (loading) {
@@ -135,7 +173,7 @@ export default function NotificationChannelsPage() {
           </div>
           <h3 className="text-lg font-semibold">No channels configured</h3>
           <p className="mb-6 mt-2 text-sm text-muted-foreground max-w-sm">
-            You haven't added any notification channels yet. Add an email address to get started receiving alerts.
+            You haven't added any notification channels yet. Add an email or Slack webhook to get started.
           </p>
           <button
             onClick={() => setShowAddModal(true)}
@@ -154,11 +192,7 @@ export default function NotificationChannelsPage() {
             >
               <div className="flex items-center gap-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  {channel.type === 'email' ? (
-                    <LucideMail className="h-5 w-5 text-primary" />
-                  ) : (
-                    <LucideBellRing className="h-5 w-5 text-primary" />
-                  )}
+                  {getChannelIcon(channel.type)}
                 </div>
                 <div>
                   <h4 className="font-semibold capitalize text-foreground flex items-center gap-2">
@@ -168,7 +202,7 @@ export default function NotificationChannelsPage() {
                     )}
                   </h4>
                   <p className="text-sm text-muted-foreground">
-                    {channel.type === 'email' ? (channel.config as any)?.email : JSON.stringify(channel.config)}
+                    {getChannelDisplay(channel)}
                   </p>
                 </div>
               </div>
@@ -189,28 +223,89 @@ export default function NotificationChannelsPage() {
           <div className="w-full max-w-md animate-in fade-in zoom-in-95 rounded-xl border bg-card p-6 shadow-lg">
             <h2 className="text-xl font-bold">Add Channel</h2>
             <p className="mb-6 text-sm text-muted-foreground">
-              Add a new email address to receive downtime alerts.
+              Choose a channel type and configure it to receive downtime alerts.
             </p>
 
+            {/* Channel Type Selector */}
+            <div className="mb-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setChannelType("email")}
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                  channelType === "email"
+                    ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                    : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                }`}
+              >
+                <LucideMail className="h-4 w-4" />
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => setChannelType("slack")}
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                  channelType === "slack"
+                    ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                    : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                }`}
+              >
+                <LucideHash className="h-4 w-4" />
+                Slack
+              </button>
+            </div>
+
             <form onSubmit={handleAddChannel}>
-              <div className="mb-4">
-                <label className="mb-2 block text-sm font-medium">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="alerts@example.com"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-              </div>
+              {channelType === "email" ? (
+                <div className="mb-4">
+                  <label className="mb-2 block text-sm font-medium">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="alerts@example.com"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <label className="mb-2 block text-sm font-medium">
+                    Slack Webhook URL
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={newWebhookUrl}
+                    onChange={(e) => setNewWebhookUrl(e.target.value)}
+                    placeholder="https://hooks.slack.com/services/T.../B.../xxxx"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Create an{" "}
+                    <a
+                      href="https://api.slack.com/messaging/webhooks"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline underline-offset-2 hover:text-primary/80"
+                    >
+                      Incoming Webhook
+                    </a>{" "}
+                    in your Slack workspace to get this URL.
+                  </p>
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setChannelType("email");
+                    setNewEmail("");
+                    setNewWebhookUrl("");
+                  }}
                   className="rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
                 >
                   Cancel
@@ -237,3 +332,4 @@ export default function NotificationChannelsPage() {
     </main>
   );
 }
+

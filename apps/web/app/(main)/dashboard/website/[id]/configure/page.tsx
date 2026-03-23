@@ -8,7 +8,8 @@ import {
   LucideLoader2,
   LucideBellRing,
   LucideCheck,
-  LucideMail
+  LucideMail,
+  LucideHash
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -100,6 +101,32 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
     }
   };
 
+  const getChannelDisplay = (channel: Channel) => {
+    if (channel.type === "email") {
+      return (channel.config as any)?.email ?? "—";
+    }
+    if (channel.type === "slack") {
+      const url = (channel.config as any)?.webhookUrl ?? "";
+      if (url.length > 40) {
+        return url.slice(0, 30) + "•••" + url.slice(-8);
+      }
+      return url || "—";
+    }
+    return JSON.stringify(channel.config);
+  };
+
+  const getChannelIcon = (type: string, isSelected: boolean) => {
+    const cls = `h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`;
+    switch (type) {
+      case "email":
+        return <LucideMail className={cls} />;
+      case "slack":
+        return <LucideHash className={cls} />;
+      default:
+        return <LucideBellRing className={cls} />;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -168,18 +195,16 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
                       : "border-border hover:border-primary/50 hover:bg-accent/50"}
                   `}
                 >
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                       {channel.type === "email" ? (
-                         <LucideMail className={`h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
-                       ) : (
-                         <LucideBellRing className={`h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
-                       )}
-                       <span className="font-semibold capitalize">{channel.type}</span>
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isSelected ? "bg-primary/10" : "bg-muted"}`}>
+                      {getChannelIcon(channel.type, isSelected)}
                     </div>
-                    <span className="text-sm text-muted-foreground mt-1 ml-6">
-                      {channel.type === 'email' ? (channel.config as any)?.email : JSON.stringify(channel.config)}
-                    </span>
+                    <div className="min-w-0">
+                      <span className="font-semibold capitalize block">{channel.type}</span>
+                      <span className="text-sm text-muted-foreground truncate block max-w-xs">
+                        {getChannelDisplay(channel)}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className={`
