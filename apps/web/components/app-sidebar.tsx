@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   useSidebar
 } from "@/components/ui/sidebar";
-import { LucideGlobe, LucideLogOut, LucideActivity, LucideAlertOctagon, LucideSettings, PanelLeft } from "lucide-react";
+import { LucideGlobe, LucideLogOut, LucideActivity, LucideAlertOctagon, LucideSettings, PanelLeft, LucideCalendar } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -80,6 +80,14 @@ export function AppSidebar() {
                   <Link href="/incidents">
                   <LucideAlertOctagon className="h-4 w-4" />
                     <span>Incidents</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="On-Call Schedule">
+                  <Link href="/on-call-schedule">
+                  <LucideCalendar className="h-4 w-4" />
+                    <span>On-Call Schedule</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
