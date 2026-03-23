@@ -1,7 +1,9 @@
+import { sendEmail } from "./email";
 import type { NotificationPayload } from "./types";
-export function sendNotification(notificationPayload: NotificationPayload){
+export async function sendNotification(notificationPayload: NotificationPayload){
     switch (notificationPayload.channel.type){
         case "email":
+            await sendEmail(notificationPayload)
             break;
         case "slack":
             break;

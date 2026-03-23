@@ -1,5 +1,5 @@
 {
-  "name": "notifications",
+  "name": "@repo/notifications",
   "module": "index.ts",
   "type": "module",
   "private": true,
@@ -7,7 +7,8 @@
     ".": "./index.ts"
   },
   "dependencies": {
-    "@repo/db": "workspace:*"
+    "@repo/db": "workspace:*",
+    "resend": "^6.9.4"
   },
   "devDependencies": {
     "@types/bun": "latest"

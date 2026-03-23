@@ -7,7 +7,8 @@
     "dev": "bun run index.ts"
   },
   "dependencies": {
-    "@repo/db": "workspace:*"
+    "@repo/db": "workspace:*",
+    "@repo/notifications":"workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"

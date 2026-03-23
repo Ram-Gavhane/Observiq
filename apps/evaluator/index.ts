@@ -1,4 +1,5 @@
 import prismaClient from "@repo/db";
+import { sendNotification } from "@repo/notifications";
 
 async function handleAlertLogic() {
     const CONSECUTIVE_FAILURES_THRESHOLD = 2;
@@ -16,7 +17,7 @@ async function handleAlertLogic() {
        AND SUM(CASE WHEN "status" = 'DOWN' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
 `;
 
-    
+
     const websitesUp = await prismaClient.$queryRaw<{ websiteId: string }[]>`
     SELECT "websiteId"
     FROM (
@@ -59,7 +60,8 @@ async function handleAlertLogic() {
             websiteId: { in: downWebsiteIds }
         },
         include: {
-            notificationChannel: true
+            notificationChannel: true,
+            website:true
         }
     });
 
@@ -108,6 +110,12 @@ async function handleAlertLogic() {
                     message: "Incident detected — website is DOWN",
                 }
             });
+            await sendNotification({
+                eventType:"incident_created",
+                websiteUrl:wc.website.url,
+                message:"Incident detected — website is DOWN",
+                channel:wc.notificationChannel
+            });
         } else {
             // updated — alert sent or escalated
             await prismaClient.incidentEvent.create({
@@ -119,6 +127,21 @@ async function handleAlertLogic() {
                         : `Alert #${newCount} sent via ${wc.notificationChannel.type}`,
                 }
             });
+            if(newCount<3){
+                await sendNotification({
+                    eventType:"alert_sent",
+                    websiteUrl:wc.website.url,
+                    message:`Alert #${newCount} sent via ${wc.notificationChannel.type}`,
+                    channel:wc.notificationChannel
+                });
+            }else{
+                await sendNotification({
+                    eventType:"alert_escalated",
+                    websiteUrl:wc.website.url,
+                    message:"Escalated to on-call after 3 alerts",
+                    channel:wc.notificationChannel
+                });
+            }
         }
     }
 }
