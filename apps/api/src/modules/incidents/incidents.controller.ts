@@ -3,11 +3,18 @@ import prismaClient from "@repo/db";
 
 export const getIncidents = async (req: Request, res: Response) => {
     const userId = req.userId;
+    console.log(userId);
+    const websites = await prismaClient.website.findMany({
+        where: {
+            userId,
+        }
+    });
+    console.log(websites);
 
     const incidents = await prismaClient.alerts.findMany({
         where: {
-            website: {
-                userId,
+            websiteId: {
+                in: websites.map(w => w.id),
             },
         },
         include: {

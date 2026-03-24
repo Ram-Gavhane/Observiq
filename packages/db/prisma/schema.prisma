@@ -77,8 +77,8 @@ model NotificationChannel {
   updatedAt DateTime @updatedAt
 
   user                        User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  alerts                      Alerts[]
   websiteNotificationChannels WebsiteNotificationChannel[]
+  alertNotification           AlertNotification[]
 }
 
 model WebsiteNotificationChannel {
@@ -92,21 +92,33 @@ model WebsiteNotificationChannel {
 }
 
 model Alerts {
-  id                    String    @id @default(cuid())
-  websiteId             String
-  notificationChannelId String?
-  status                String    @default("triggered") // "triggered" | "escalated" | "resolved"
-  alertCount            Int       @default(0)
-  escalated             Boolean   @default(false)
-  triggeredAt           DateTime  @default(now())
-  resolvedAt            DateTime?
-  lastAlertedAt         DateTime?
+  id            String    @id @default(cuid())
+  websiteId     String
+  status        String    @default("triggered") // "triggered" | "escalated" | "resolved"
+  alertCount    Int       @default(0)
+  escalated     Boolean   @default(false)
+  triggeredAt   DateTime  @default(now())
+  resolvedAt    DateTime?
+  lastAlertedAt DateTime?
 
-  website             Website              @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  notificationChannel NotificationChannel? @relation(fields: [notificationChannelId], references: [id], onDelete: SetNull)
-  incidentEvents      IncidentEvent[]
+  website           Website             @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  incidentEvents    IncidentEvent[]
+  alertNotification AlertNotification[]
 
-  @@unique([websiteId, notificationChannelId])
+  @@index([websiteId])
+}
+
+model AlertNotification {
+  id                    String   @id @default(uuid())
+  alertId               String
+  notificationChannelId String
+  eventType             String
+  createdAt             DateTime @default(now())
+
+  alert               Alerts              @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+
+  @@index([alertId])
 }
 
 model IncidentEvent {

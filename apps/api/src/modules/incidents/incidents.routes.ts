@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { getIncidentTimeline, getIncidents } from "./incidents.controller";
+import authMiddleware from "../../common/auth/middleware";
 
 const router = Router();
 
-router.get("/get-incidents", getIncidents);
-router.get("/get-incident-timeline/:alertId", getIncidentTimeline);
+router.get("/get-incidents", authMiddleware, getIncidents);
+router.get("/get-incident-timeline/:alertId", authMiddleware, getIncidentTimeline);
 
 export default router;

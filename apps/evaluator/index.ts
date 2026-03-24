@@ -15,8 +15,7 @@ async function handleAlertLogic() {
     GROUP BY "websiteId", "region"
     HAVING COUNT(*) = ${CONSECUTIVE_FAILURES_THRESHOLD}
        AND SUM(CASE WHEN "status" = 'DOWN' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
-`;
-
+    `;
 
     const websitesUp = await prismaClient.$queryRaw<{ websiteId: string }[]>`
     SELECT "websiteId"
@@ -29,17 +28,26 @@ async function handleAlertLogic() {
     GROUP BY "websiteId", "region"
     HAVING COUNT(*) = ${CONSECUTIVE_FAILURES_THRESHOLD}
        AND SUM(CASE WHEN "status" = 'UP' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
-`;
+    `;
 
-    const downWebsiteIds = [...new Set(websitesDown.map(w => w.websiteId))]
-    const upWebsiteIds = [...new Set(websitesUp.map(w => w.websiteId))].filter(id => !downWebsiteIds.includes(id))
+    const downWebsiteIds = [...new Set(websitesDown.map(w => w.websiteId))];
+    const upWebsiteIds = [...new Set(websitesUp.map(w => w.websiteId))]
+        .filter(id => !downWebsiteIds.includes(id));
 
     const resolvedAlerts = await prismaClient.alerts.findMany({
         where: {
             websiteId: { in: upWebsiteIds },
             status: { in: ["triggered", "escalated"] },
         },
-        select: { id: true }
+        include: {
+            website: {
+                include: {
+                    websiteNotificationChannels: {
+                        include: { notificationChannel: true }
+                    }
+                }
+            }
+        }
     });
 
     await prismaClient.alerts.updateMany({
@@ -52,115 +60,117 @@ async function handleAlertLogic() {
             alertId: alert.id,
             type: "incident_resolved",
             message: "Website is back UP — incident resolved",
-        }))
+        })),
     });
 
-    const websiteChannelsResolved = await prismaClient.websiteNotificationChannel.findMany({
-        where: {
-            websiteId: { in: upWebsiteIds }
-        },
-        include: {
-            notificationChannel: true,
-            website: true
+    for (const alert of resolvedAlerts) {
+        for (const wc of alert.website.websiteNotificationChannels) {
+            if (!wc.notificationChannel.active) continue;
+
+            await sendNotification({
+                eventType: "incident_resolved",
+                websiteUrl: alert.website.url,
+                message: "Website is back UP — incident resolved",
+                channel: wc.notificationChannel
+            });
+
+            await prismaClient.alertNotification.create({
+                data: {
+                    alertId: alert.id,
+                    notificationChannelId: wc.notificationChannelId,
+                    eventType: "incident_resolved",
+                }
+            });
         }
-    });
-
-    for (const wc of websiteChannelsResolved) {
-        await sendNotification({
-            eventType: "incident_resolved",
-            websiteUrl: wc.website.url,
-            message: "Website is back UP — incident resolved",
-            channel: wc.notificationChannel
-        });
     }
 
-    const websiteChannels = await prismaClient.websiteNotificationChannel.findMany({
-        where: {
-            websiteId: { in: downWebsiteIds }
-        },
+    if (downWebsiteIds.length === 0) return;
+
+    const downWebsites = await prismaClient.website.findMany({
+        where: { id: { in: downWebsiteIds } },
         include: {
-            notificationChannel: true,
-            website: true
+            websiteNotificationChannels: {
+                include: { notificationChannel: true }
+            }
         }
     });
 
-    if (websiteChannels.length === 0) return;
-
-    for (const wc of websiteChannels) {
-        const existing = await prismaClient.alerts.findFirst({
+    for (const website of downWebsites) {
+        const existingAlert = await prismaClient.alerts.findFirst({
             where: {
-                websiteId: wc.websiteId,
-                notificationChannelId: wc.notificationChannelId,
-                status: { in: ["triggered", "escalated"] },
-            },
-            select: { alertCount: true }
-        });
-
-        const newCount = (existing?.alertCount ?? 0) + 1;
-
-        const upsertedAlert = await prismaClient.alerts.upsert({
-            where: {
-                websiteId_notificationChannelId: {
-                    websiteId: wc.websiteId,
-                    notificationChannelId: wc.notificationChannelId,
-                }
-            },
-            update: {
-                alertCount: { increment: 1 },
-                lastAlertedAt: new Date(),
-                escalated: newCount >= 3,
-                status: newCount >= 3 ? "escalated" : "triggered",
-            },
-            create: {
-                websiteId: wc.websiteId,
-                notificationChannelId: wc.notificationChannelId,
-                status: "triggered",
-                alertCount: 1,
-                lastAlertedAt: new Date(),
+                websiteId: website.id,
+                status: { in: ["triggered", "escalated"] }
             }
         });
 
-        if (!existing) {
-            // freshly created
+        const newCount = (existingAlert?.alertCount ?? 0) + 1;
+        const isEscalated = newCount >= 3;
+
+        let alert;
+
+        if (!existingAlert) {
+            alert = await prismaClient.alerts.create({
+                data: {
+                    websiteId: website.id,
+                    status: "triggered",
+                    alertCount: 1,
+                    lastAlertedAt: new Date(),
+                }
+            });
             await prismaClient.incidentEvent.create({
                 data: {
-                    alertId: upsertedAlert.id,
+                    alertId: alert.id,
                     type: "incident_created",
                     message: "Incident detected — website is DOWN",
                 }
             });
-            await sendNotification({
-                eventType: "incident_created",
-                websiteUrl: wc.website.url,
-                message: "Incident detected — website is DOWN",
-                channel: wc.notificationChannel
-            });
         } else {
-            // updated — alert sent or escalated
-            await prismaClient.incidentEvent.create({
+            alert = await prismaClient.alerts.update({
+                where: { id: existingAlert.id },
                 data: {
-                    alertId: upsertedAlert.id,
-                    type: newCount >= 3 ? "alert_escalated" : "alert_sent",
-                    message: newCount >= 3
-                        ? "Escalated to on-call after 3 alerts"
-                        : `Alert #${newCount} sent via ${wc.notificationChannel.type}`,
+                    alertCount: { increment: 1 },
+                    lastAlertedAt: new Date(),
+                    escalated: isEscalated,
+                    status: isEscalated ? "escalated" : "triggered",
                 }
             });
-            if (newCount < 3) {
-                await sendNotification({
-                    eventType: "alert_sent",
-                    websiteUrl: wc.website.url,
-                    message: `Alert #${newCount} sent via ${wc.notificationChannel.type}`,
-                    channel: wc.notificationChannel
-                });
-            } else {
-                await sendNotification({
-                    eventType: "alert_escalated",
-                    websiteUrl: wc.website.url,
-                    message: "Escalated to on-call after 3 alerts",
-                    channel: wc.notificationChannel
-                });
-            }
+
+            await prismaClient.incidentEvent.create({
+                data: {
+                    alertId: alert.id,
+                    type: isEscalated ? "alert_escalated" : "alert_sent",
+                    message: isEscalated
+                        ? "Escalated to on-call after 3 alerts"
+                        : `Alert #${newCount} — website still DOWN`,
+                }
+            });
+        }
+
+        for (const wc of website.websiteNotificationChannels) {
+            if (!wc.notificationChannel.active) continue;
+
+            const eventType = !existingAlert
+                ? "incident_created"
+                : isEscalated ? "alert_escalated" : "alert_sent";
+
+            await sendNotification({
+                eventType,
+                websiteUrl: website.url,
+                message: !existingAlert
+                    ? "Incident detected — website is DOWN"
+                    : isEscalated
+                        ? "Escalated to on-call after 3 alerts"
+                        : `Alert #${newCount} — website still DOWN`,
+                channel: wc.notificationChannel
+            });
+
+            await prismaClient.alertNotification.create({
+                data: {
+                    alertId: alert.id,
+                    notificationChannelId: wc.notificationChannelId,
+                    eventType,
+                }
+            });
         }
     }
 }
