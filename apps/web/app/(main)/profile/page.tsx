@@ -16,7 +16,7 @@ interface UserProfile {
   id: string;
   email: string;
   _count: {
-    websites: number;
+    monitors: number;
     notificationChannels: number;
   };
 }
@@ -110,8 +110,8 @@ export default function ProfilePage() {
                     <LucideGlobe className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-3xl font-bold text-foreground">{profile._count.websites}</p>
-                    <p className="text-xs font-medium text-muted-foreground mt-1">Monitored Websites</p>
+                    <p className="text-3xl font-bold text-foreground">{profile._count.monitors}</p>
+                    <p className="text-xs font-medium text-muted-foreground mt-1">Active Monitors</p>
                   </div>
                 </div>
                 

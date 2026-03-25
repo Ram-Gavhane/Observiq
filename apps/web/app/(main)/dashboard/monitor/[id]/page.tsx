@@ -9,15 +9,20 @@ import {
   LucideMapPin,
   LucideCheckCircle2,
   LucideXCircle,
-  LucideLoader2,
+  LucideLoader2, 
   LucideTrash2,
   LucideAlertTriangle,
   LucideShield,
   LucidePauseCircle,
-  LucideSettings
+  LucideSettings,
+  LucideActivity,
+  LucideGlobe,
+  LucideDatabase,
+  LucideCalendar
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   LineChart,
   Line,
@@ -31,15 +36,19 @@ import {
 interface Tick {
   id: string;
   status: string;
-  responseTimeMs: number;
+  durationMs: number;
   region: string;
   createdAt: string;
+  details?: any;
 }
 
-interface Website {
+interface Monitor {
   id: string;
-  url: string;
-  timeAdded: string;
+  name: string;
+  type: string;
+  target: string;
+  createdAt: string;
+  config: any;
   _count?: {
     alerts: number;
   };
@@ -71,19 +80,14 @@ function formatLastChecked(dateStr?: string) {
   return `${diffHour} hour${diffHour === 1 ? '' : 's'} ago`;
 }
 
-export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+export default function MonitorDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [website, setWebsite] = useState<Website | null>(null);
+  const [monitor, setMonitor] = useState<Monitor | null>(null);
   const [ticks, setTicks] = useState<Tick[]>([]);
-  const [insights, setInsights] = useState<{uptime24h: string, uptime7d: string, responseTimeTrends: unknown[]} | null>(null);
+  const [insights, setInsights] = useState<{uptime24h: string, uptime7d: string, responseTimeTrends: any[]} | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const router = useRouter();  useEffect(() => {
-    const interval = setInterval(() => {
-      window.location.reload();
-    }, 1 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const router = useRouter();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -92,22 +96,25 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
       return;
     }
     fetchDetails();
+    
+    const interval = setInterval(fetchDetails, 60 * 1000);
+    return () => clearInterval(interval);
   }, [id]);
 
   const fetchDetails = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + `/website/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const insightsResponse = await axios.get(process.env.NEXT_PUBLIC_API_URL + `/website/${id}/insights`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setWebsite(response.data.website);
-      setTicks(response.data.latestTicks);
-      setInsights(insightsResponse.data);
+      const [monitorRes, ticksRes, insightsRes] = await Promise.all([
+        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/monitor/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/monitor/${id}/checks`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/monitor/${id}/insights`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      
+      setMonitor(monitorRes.data.monitor);
+      setTicks(ticksRes.data.checks);
+      setInsights(insightsRes.data);
     } catch (err: unknown) {
-      toast.error("Failed to fetch website details");
+      toast.error("Failed to fetch monitor details");
     } finally {
       setLoading(false);
     }
@@ -115,23 +122,22 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
 
   const executeDelete = async () => {
     setDeleting(true);
-
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(process.env.NEXT_PUBLIC_API_URL + `/website/${id}`, {
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/monitor/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       router.push("/dashboard");
-    } catch (err: unknown) {
-      toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to delete website");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete monitor");
       setDeleting(false);
     }
   };
 
   const handleDelete = () => {
-    toast("Delete Website", {
+    toast("Delete Monitor", {
       position: "top-center",
-      description: "Are you sure you want to delete this website? This action cannot be undone.",
+      description: "Are you sure you want to delete this monitor? This action cannot be undone.",
       duration: 6000,
       classNames: {
         toast: "bg-background/80 backdrop-blur-xl border border-border shadow-md rounded-2xl p-4 gap-2",
@@ -142,12 +148,9 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
       },
       action: {
         label: "Ok",
-        onClick: () => executeDelete(),
+        onClick: executeDelete,
       },
-      cancel: {
-        label: "Cancel",
-        onClick: () => {},
-      }
+      cancel: { label: "Cancel", onClick: () => {} }
     });
   };
 
@@ -159,16 +162,27 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  if (!website) {
+  if (!monitor) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-destructive font-medium">Website not found</p>
+        <p className="text-destructive font-medium">Monitor not found</p>
         <Link href="/dashboard" className="text-sm font-semibold text-primary hover:underline">
           Back to Dashboard
         </Link>
       </div>
     );
   }
+
+  const getTypeIcon = () => {
+    switch(monitor.type) {
+      case "HTTP": return LucideGlobe;
+      case "PING": return LucideActivity;
+      case "DNS": return LucideDatabase;
+      case "SSL": return LucideShield;
+      default: return LucideActivity;
+    }
+  };
+  const TypeIcon = getTypeIcon();
 
   return (
     <>
@@ -184,8 +198,16 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
             </Link>
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
-                <h1 className="text-3xl font-extrabold tracking-tight truncate max-w-2xl">{website.url}</h1>
-                <p className="text-muted-foreground mt-1">Real-time status and historical performance.</p>
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-xl">
+                    <TypeIcon className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+                    {monitor.type}
+                  </span>
+                </div>
+                <h1 className="text-3xl font-extrabold tracking-tight truncate max-w-2xl">{monitor.name}</h1>
+                <p className="text-muted-foreground mt-1 truncate max-w-xl">{monitor.target}</p>
               </div>
               <button
                 onClick={handleDelete}
@@ -193,16 +215,15 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
                 className="inline-flex h-10 items-center gap-2 rounded-full border border-destructive/20 bg-destructive/5 px-4 text-sm font-semibold text-destructive transition-all hover:bg-destructive hover:text-white disabled:opacity-50"
               >
                 {deleting ? <LucideLoader2 className="h-4 w-4 animate-spin" /> : <LucideTrash2 className="h-4 w-4" />}
-                Delete Website
+                Delete Monitor
               </button>
             </div>
           </div>
 
-          {/* New ActionBar & Stats */}
           <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center gap-6">
               <button 
-                onClick={() => toast.success("Test alert dispatched for " + website.url)} 
+                onClick={() => toast.success("Test alert dispatched for " + monitor.name)} 
                 className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 <LucideAlertTriangle className="h-4 w-4" />
@@ -216,7 +237,7 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
                 <LucidePauseCircle className="h-4 w-4" />
                 <span>Pause this monitor</span>
               </button>
-              <Link href={`/dashboard/website/${website.id}/configure`} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              <Link href={`#`} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors opacity-50 cursor-not-allowed">
                 <LucideSettings className="h-4 w-4" />
                 <span>Configure</span>
               </Link>
@@ -224,21 +245,30 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
 
             <div className="grid gap-6 md:grid-cols-3">
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Monitor is up for</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                  <LucideCalendar className="h-4 w-4 opacity-50" />
+                  Monitor active for
+                </h3>
                 <div className="text-xl font-bold">
-                  {website.timeAdded ? formatUptime(website.timeAdded) : 'N/A'}
+                  {monitor.createdAt ? formatUptime(monitor.createdAt) : 'N/A'}
                 </div>
               </div>
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Last checked</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                  <LucideClock className="h-4 w-4 opacity-50" />
+                  Last checked
+                </h3>
                 <div className="text-xl font-bold">
                   {formatLastChecked(ticks[0]?.createdAt)}
                 </div>
               </div>
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">Incidents</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                  <LucideAlertTriangle className="h-4 w-4 opacity-50" />
+                  Total Incidents
+                </h3>
                 <div className="text-xl font-bold">
-                  {website._count?.alerts || 0}
+                  {monitor._count?.alerts || 0}
                 </div>
               </div>
             </div>
@@ -261,9 +291,11 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
             </div>
           )}
 
-          {insights && insights.responseTimeTrends.length > 0 && (
+          {insights && insights.responseTimeTrends.length > 0 && monitor.type !== "SSL" && (
             <div className="grid gap-6">
-              <h2 className="text-xl font-bold">Response Time Trends (Last 24h)</h2>
+              <h2 className="text-xl font-bold">
+                {monitor.type === "PING" ? "Latency Trends" : "Response Time Trends"} (Last 24h)
+              </h2>
               <div className="rounded-3xl border border-border bg-card p-6 shadow-sm h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={insights.responseTimeTrends}>
@@ -285,7 +317,7 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
                     <Tooltip 
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                       labelStyle={{ fontWeight: 'bold', color: '#888888', marginBottom: '4px' }}
-                      formatter={(value) => [`${value}ms`, 'Response Time']}
+                      formatter={(value) => [`${value}ms`, monitor.type === "PING" ? 'Latency' : 'Response Time']}
                     />
                     <Line 
                       type="monotone" 
@@ -297,6 +329,41 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
                     />
                   </LineChart>
                 </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {monitor.type === "SSL" && ticks[0]?.details?.sslInfo && (
+            <div className="grid gap-6">
+              <h2 className="text-xl font-bold">SSL Certificate Info</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="bg-card border border-border p-4 rounded-2xl">
+                  <div className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-wider">Days to Expiry</div>
+                  <div className={cn(
+                    "text-2xl font-black",
+                    ticks[0].details.sslInfo.daysRemaining < 30 ? "text-destructive" : "text-emerald-500"
+                  )}>
+                    {ticks[0].details.sslInfo.daysRemaining} days
+                  </div>
+                </div>
+                <div className="bg-card border border-border p-4 rounded-2xl">
+                  <div className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-wider">Issuer</div>
+                  <div className="text-lg font-bold truncate">
+                    {ticks[0].details.sslInfo.issuer}
+                  </div>
+                </div>
+                <div className="bg-card border border-border p-4 rounded-2xl">
+                  <div className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-wider">Valid From</div>
+                  <div className="text-lg font-semibold">
+                    {new Date(ticks[0].details.sslInfo.validFrom).toLocaleDateString()}
+                  </div>
+                </div>
+                <div className="bg-card border border-border p-4 rounded-2xl">
+                  <div className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-wider">Valid To</div>
+                  <div className="text-lg font-semibold">
+                    {new Date(ticks[0].details.sslInfo.validTo).toLocaleDateString()}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -313,10 +380,10 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-border bg-zinc-50/50 dark:bg-zinc-900/50">
-                        <th className="px-6 py-4 font-bold">Status</th>
-                        <th className="px-6 py-4 font-bold">Response Time</th>
-                        <th className="px-6 py-4 font-bold">Region</th>
-                        <th className="px-6 py-4 font-bold text-right">Time</th>
+                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-muted-foreground">Status</th>
+                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-muted-foreground">Metric</th>
+                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-muted-foreground text-center">Region</th>
+                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-muted-foreground text-right">Time</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -327,12 +394,12 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
                               {tick.status == "UP" ? (
                                 <>
                                   <LucideCheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{tick.status}</span>
+                                  <span className="font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">{tick.status}</span>
                                 </>
                               ) : (
                                 <>
                                   <LucideXCircle className="h-4 w-4 text-destructive" />
-                                  <span className="font-semibold text-destructive">{tick.status}</span>
+                                  <span className="font-bold text-destructive tracking-tight">{tick.status}</span>
                                 </>
                               )}
                             </div>
@@ -340,16 +407,20 @@ export default function WebsiteDetailsPage({ params }: { params: Promise<{ id: s
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <LucideClock className="h-4 w-4 opacity-40" />
-                              <span className="font-medium">{tick.responseTimeMs}ms</span>
+                              <span className="font-semibold tabular-nums">
+                                {monitor.type === "HTTP" || monitor.type === "PING" ? `${tick.durationMs}ms` : '-'}
+                                {monitor.type === "DNS" && tick.details?.responseStatus ? tick.details.responseStatus : ''}
+                                {monitor.type === "SSL" && tick.details?.sslInfo?.daysRemaining ? `${tick.details.sslInfo.daysRemaining}d` : ''}
+                              </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
+                          <td className="px-6 py-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
                               <LucideMapPin className="h-4 w-4 opacity-40" />
-                              <span className="capitalize">{tick.region}</span>
+                              <span className="capitalize font-medium">{tick.region}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-right text-muted-foreground">
+                          <td className="px-6 py-4 text-right text-muted-foreground font-medium tabular-nums">
                             {new Date(tick.createdAt).toLocaleTimeString()}
                           </td>
                         </tr>

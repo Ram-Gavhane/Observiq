@@ -23,16 +23,20 @@ interface Channel {
   active: boolean;
 }
 
-interface Website {
+interface Monitor {
   id: string;
-  url: string;
+  name: string;
+  target: string;
+  monitorNotificationChannels?: {
+    notificationChannelId: string;
+  }[];
 }
 
-export default function WebsiteConfigurePage({ params }: { params: Promise<{ id: string }> }) {
+export default function MonitorConfigurePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   
-  const [website, setWebsite] = useState<Website | null>(null);
+  const [monitor, setMonitor] = useState<Monitor | null>(null);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -47,8 +51,8 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
           return;
         }
 
-        const [websiteRes, channelsRes] = await Promise.all([
-          axios.get(process.env.NEXT_PUBLIC_API_URL + `/website/${id}`, {
+        const [monitorRes, channelsRes] = await Promise.all([
+          axios.get(process.env.NEXT_PUBLIC_API_URL + `/monitor/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
           axios.get(process.env.NEXT_PUBLIC_API_URL + "/get-channels", {
@@ -56,12 +60,12 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
           })
         ]);
 
-        const websiteData = websiteRes.data.website;
-        setWebsite(websiteData);
+        const monitorData = monitorRes.data.monitor;
+        setMonitor(monitorData);
         setChannels(channelsRes.data);
 
         // Pre-select existing configured channels
-        const existingLinks = websiteData.websiteNotificationChannels || [];
+        const existingLinks = monitorData.monitorNotificationChannels || [];
         const initialSelections = new Set<string>();
         existingLinks.forEach((link: any) => initialSelections.add(link.notificationChannelId));
         setSelectedChannels(initialSelections);
@@ -91,12 +95,12 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        process.env.NEXT_PUBLIC_API_URL + `/website/${id}/channels`,
+        process.env.NEXT_PUBLIC_API_URL + `/monitor/${id}/channels`,
         { channelIds: Array.from(selectedChannels) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      router.push(`/dashboard/website/${id}`);
+      router.push(`/dashboard/monitor/${id}`);
     } catch (err) {
       toast.error("Failed to save configuration");
       setSaving(false);
@@ -139,11 +143,11 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
     );
   }
 
-  if (!website) {
+  if (!monitor) {
     return (
       <div className="flex h-screen items-center justify-center flex-col gap-4">
-        <p className="text-destructive font-medium">Website not found</p>
-        <Link href={`/dashboard/website/${id}`} className="text-sm font-semibold text-primary hover:underline">
+        <p className="text-destructive font-medium">Monitor not found</p>
+        <Link href={`/dashboard/monitor/${id}`} className="text-sm font-semibold text-primary hover:underline">
           Go Back
         </Link>
       </div>
@@ -154,7 +158,7 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
     <main className="mx-auto max-w-4xl px-6 py-8">
       <div className="flex items-center gap-4 mb-8">
         <Link 
-          href={`/dashboard/website/${id}`}
+          href={`/dashboard/monitor/${id}`}
           className="rounded-full p-2 hover:bg-accent transition-colors"
         >
           <LucideArrowLeft className="h-5 w-5" />
@@ -162,7 +166,7 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Configure Alerts</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            {website.url}
+            {monitor.name} ({monitor.target})
           </p>
         </div>
       </div>
@@ -170,7 +174,7 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
       <div className="rounded-xl border border-border bg-card shadow-sm p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">Notification Channels</h2>
         <p className="text-muted-foreground text-sm mb-6">
-          Select which channels should receive downtime alerts when this website goes offline.
+          Select which channels should receive downtime alerts when this monitor goes offline.
         </p>
 
         {channels.length === 0 ? (
@@ -226,7 +230,7 @@ export default function WebsiteConfigurePage({ params }: { params: Promise<{ id:
 
       <div className="flex items-center justify-end gap-4">
         <Link 
-          href={`/dashboard/website/${id}`}
+          href={`/dashboard/monitor/${id}`}
           className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
         >
           Cancel

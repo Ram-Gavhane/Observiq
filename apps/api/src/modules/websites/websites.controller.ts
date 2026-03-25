@@ -1,145 +1,62 @@
 import type { Request, Response } from "express";
-import type { WebsiteTick } from "../../common/types";
-import {
-  countTicksSince,
-  countUpTicksSince,
-  createWebsite,
-  deleteWebsite,
-  deleteWebsiteTicks,
-  findUserById,
-  getLatestTicks,
-  getTicksSince,
-  getWebsiteById,
-  listWebsitesForUser,
-} from "./websites.service";
-import { xAddBulk } from "@repo/redisstreams";
+import { REGION } from "@repo/db";
+import { createWebsiteMonitor, deleteWebsiteForUser, getWebsitesForUser } from "./websites.service";
+
+const ALLOWED_REGIONS = new Set(Object.values(REGION));
+
+const normalizeRegions = (regions: unknown) => {
+  if (!Array.isArray(regions)) return null;
+  const normalized = regions
+    .map((r) => (typeof r === "string" ? r.toUpperCase() : ""))
+    .filter((r) => ALLOWED_REGIONS.has(r as REGION)) as REGION[];
+  return normalized.length > 0 ? normalized : null;
+};
 
 export const addWebsite = async (req: Request, res: Response) => {
-  const { url, regions } = req.body;
   const userId = req.userId;
+  const { url, regions } = req.body;
 
-  const user = await findUserById(userId);
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+  if (!url) {
+    return res.status(400).json({ message: "url is required" });
+  }
+
+  const normalizedRegions = normalizeRegions(regions);
+  if (!normalizedRegions) {
+    return res.status(400).json({ message: "At least one valid region is required" });
   }
 
   try {
-    const response = await createWebsite(url, regions, userId);
-    await xAddBulk([{ id: response.id, regions, url }])
-    res.json({
-      message: "Website added successfully",
-      response,
-    });
-  } catch (error: any) {
-    console.log(error);
-    res.status(500).json({ error });
+    const website = await createWebsiteMonitor(userId, url, normalizedRegions);
+    res.json({ message: "Website added successfully", website });
+  } catch (error) {
+    console.error("Failed to add website", error);
+    res.status(500).json({ message: "Failed to add website" });
   }
 };
 
 export const getWebsites = async (req: Request, res: Response) => {
   const userId = req.userId;
-
-  const user = await findUserById(userId);
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+  try {
+    const websites = await getWebsitesForUser(userId);
+    res.json({ websites });
+  } catch (error) {
+    console.error("Failed to fetch websites", error);
+    res.status(500).json({ message: "Failed to fetch websites" });
   }
-
-  const websites = await listWebsitesForUser(userId);
-  res.json({
-    message: "Websites fetched successfully",
-    websites,
-  });
 };
 
-export const getWebsite = async (req: Request, res: Response) => {
-  const id = req.params.id as string;
-  const website = await getWebsiteById(id);
-  const latestTicks = await getLatestTicks(id, 10);
-
-  res.json({
-    message: "Website fetched successfully",
-    website,
-    latestTicks,
-  });
-};
-
-export const updateWebsiteChannelsController = async (req: Request, res: Response) => {
-  const id = req.params.id as string;
-  const { channelIds } = req.body;
+export const deleteWebsite = async (req: Request, res: Response) => {
   const userId = req.userId;
-
-  const website = await getWebsiteById(id);
-  if (!website || website.userId !== userId) {
-    return res.status(404).json({ message: "Website not found or unauthorized" });
-  }
+  const monitorId = req.params.id as string;
 
   try {
-    await import("./websites.service").then(srv => srv.updateWebsiteChannels(id, channelIds || []));
-    res.json({ message: "Channels updated successfully" });
-  } catch (error: any) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to update channels" });
-  }
-};
-
-export const getWebsiteInsights = async (req: Request, res: Response) => {
-  const id = req.params.id as string;
-  const userId = req.userId;
-
-  const website = await getWebsiteById(id);
-  if (!website || website.userId !== userId) {
-    return res.status(404).json({ message: "Website not found or unauthorized" });
-  }
-
-  const now = new Date();
-  const ago24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const ago7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-  try {
-    const ticks24h: WebsiteTick[] = await getTicksSince(id, ago24h);
-
-    const total7dTicks = await countTicksSince(id, ago7d);
-    const up7dTicks = await countUpTicksSince(id, ago7d);
-
-    const uptime7d = total7dTicks > 0 ? (up7dTicks / total7dTicks) * 100 : 0;
-
-    let up24hTicks = 0;
-    const responseTimeTrends: { time: string; responseTime: number }[] = [];
-
-    ticks24h.forEach((tick) => {
-      if (tick.status === "UP") up24hTicks++;
-      const timeStr = new Date(tick.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      responseTimeTrends.push({
-        time: timeStr,
-        responseTime: tick.responseTimeMs,
-      });
-    });
-
-    const uptime24h = ticks24h.length > 0 ? (up24hTicks / ticks24h.length) * 100 : 0;
-
-    res.json({
-      uptime24h: uptime24h.toFixed(2),
-      uptime7d: uptime7d.toFixed(2),
-      responseTimeTrends,
-    });
-  } catch (error: any) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to fetch insights" });
-  }
-};
-
-export const removeWebsite = async (req: Request, res: Response) => {
-  const websiteId = req.params.id as string;
-
-  try {
-    const response = await deleteWebsiteTicks(websiteId);
-    if (!response) {
-      res.json({ message: "An error occured while deleting website try again" });
-      return;
+    const website = await deleteWebsiteForUser(userId, monitorId);
+    if (!website) {
+      return res.status(404).json({ message: "Website not found" });
     }
-    await deleteWebsite(websiteId);
-    res.status(200).json({ message: "Webiste deleted successfully" });
-  } catch (err) {
-    res.status(500).json(err);
+    res.json({ message: "Website deleted", website });
+  } catch (error) {
+    console.error("Failed to delete website", error);
+    res.status(500).json({ message: "Failed to delete website" });
   }
 };

@@ -19,7 +19,7 @@ import {
 
 interface Incident {
   id: string;
-  websiteId: string;
+  monitorId: string;
   notificationChannelId: string | null;
   status: string;
   alertCount: number;
@@ -27,9 +27,10 @@ interface Incident {
   triggeredAt: string;
   resolvedAt: string | null;
   lastAlertedAt: string | null;
-  website?: {
+  monitor?: {
     id: string;
-    url: string;
+    name: string;
+    target: string;
   };
 }
 
@@ -206,7 +207,7 @@ export default function IncidentsPage() {
                               )}
                             </div>
                             <span className="font-medium whitespace-nowrap">
-                              Incident on {incident.website?.url || 'Unknown System'}
+                              Incident on {incident.monitor?.name || 'Unknown System'}
                             </span>
                           </div>
                         </td>
@@ -224,7 +225,7 @@ export default function IncidentsPage() {
                         <td className="px-6 py-4">
                           <span className="text-muted-foreground flex items-center gap-2">
                             <LucideGlobe className="h-3 w-3" />
-                            {incident.website?.url || incident.websiteId}
+                            {incident.monitor?.name || incident.monitorId}
                           </span>
                         </td>
                         <td className="px-6 py-4">

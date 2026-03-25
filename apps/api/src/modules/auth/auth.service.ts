@@ -20,7 +20,7 @@ export const getUserProfile = async (id: string) => {
       email: true,
       _count: {
         select: {
-          websites: true,
+          monitors: true,
           notificationChannels: true,
         },
       },

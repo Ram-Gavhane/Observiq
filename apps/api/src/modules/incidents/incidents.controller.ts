@@ -3,44 +3,28 @@ import prismaClient from "@repo/db";
 
 export const getIncidents = async (req: Request, res: Response) => {
     const userId = req.userId;
-    console.log(userId);
-    const websites = await prismaClient.website.findMany({
-        where: {
-            userId,
-        }
+    const monitors = await prismaClient.monitor.findMany({
+        where: { userId },
+        select: { id: true, name: true, target: true, type: true },
     });
-    console.log(websites);
+    const monitorIds = monitors.map((m) => m.id);
 
-    const incidents = await prismaClient.alerts.findMany({
-        where: {
-            websiteId: {
-                in: websites.map(w => w.id),
-            },
-        },
-        include: {
-            website: true,
-        },
-        orderBy: {
-            triggeredAt: "desc"
-        }
+    const incidents = await prismaClient.incident.findMany({
+        where: { monitorId: { in: monitorIds } },
+        include: { monitor: true },
+        orderBy: { startedAt: "desc" },
     });
 
     res.json(incidents);
 }
 
 export const getIncidentTimeline = async (req: Request, res: Response) => {
-    const alertId = req.params.alertId as string;
+    const incidentId = req.params.incidentId as string;
 
     const events = await prismaClient.incidentEvent.findMany({
-        where: {
-            alertId
-        },
-        include: {
-            alert: true,
-        },
-        orderBy: {
-            createdAt: "asc"
-        }
+        where: { incidentId },
+        include: { incident: true },
+        orderBy: { createdAt: "asc" },
     });
 
     res.json(events);

@@ -2,26 +2,26 @@ import type { Request, Response } from "express";
 import {
   createStatusPage,
   deleteStatusPage,
-  getLatestTicks,
-  getStatusPageByWebsiteId,
-  getWebsiteById,
+  getLatestResults,
+  getStatusPageByMonitorId,
+  getMonitorById,
 } from "./statuspage.service";
 
 export const createWebsiteStatusPage = async (req: Request, res: Response) => {
-  const websiteId = req.params.id as string;
+  const monitorId = req.params.id as string;
   const { title, description } = req.body;
 
-  const website = await getWebsiteById(websiteId);
+  const monitor = await getMonitorById(monitorId);
 
-  if (!website || website.userId !== req.userId) {
-    return res.status(403).json({ message: "Unauthorized or website not found" });
+  if (!monitor || monitor.userId !== req.userId) {
+    return res.status(403).json({ message: "Unauthorized or monitor not found" });
   }
 
   try {
     const statusPage = await createStatusPage(
-      websiteId,
-      title || `${website.url} Status`,
-      description || `Real-time status for ${website.url}`
+      monitorId,
+      title || `${monitor.name} Status`,
+      description || `Real-time status for ${monitor.target}`
     );
 
     res.json({
@@ -31,23 +31,23 @@ export const createWebsiteStatusPage = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error(error);
     if (error.code === "P2002") {
-      return res.status(400).json({ message: "Status page already exists for this website" });
+      return res.status(400).json({ message: "Status page already exists for this monitor" });
     }
     res.status(500).json({ message: "Failed to create status page" });
   }
 };
 
 export const getStatusPage = async (req: Request, res: Response) => {
-  const websiteId = req.params.websiteId as string;
+  const monitorId = req.params.monitorId as string;
 
   try {
-    const statusPage = await getStatusPageByWebsiteId(websiteId);
+    const statusPage = await getStatusPageByMonitorId(monitorId);
 
     if (!statusPage) {
       return res.status(404).json({ message: "Status page not found" });
     }
 
-    const latestTicks = await getLatestTicks(websiteId, 500);
+    const latestTicks = await getLatestResults(monitorId, 500);
 
     res.json({
       statusPage,
@@ -60,16 +60,16 @@ export const getStatusPage = async (req: Request, res: Response) => {
 };
 
 export const deleteWebsiteStatusPage = async (req: Request, res: Response) => {
-  const websiteId = req.params.websiteId as string;
+  const monitorId = req.params.monitorId as string;
 
-  const website = await getWebsiteById(websiteId);
+  const monitor = await getMonitorById(monitorId);
 
-  if (!website || website.userId !== req.userId) {
-    return res.status(403).json({ message: "Unauthorized or website not found" });
+  if (!monitor || monitor.userId !== req.userId) {
+    return res.status(403).json({ message: "Unauthorized or monitor not found" });
   }
 
   try {
-    const statusPage = await deleteStatusPage(websiteId);
+    const statusPage = await deleteStatusPage(monitorId);
 
     res.json({
       message: "Status page deleted successfully",

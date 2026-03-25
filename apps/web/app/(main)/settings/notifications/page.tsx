@@ -160,7 +160,7 @@ export default function NotificationChannelsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Notification Channels</h1>
           <p className="text-muted-foreground mt-2">
-            Configure where you want to receive alerts for your websites.
+            Configure where you want to receive alerts for your monitors.
           </p>
         </div>
         <button

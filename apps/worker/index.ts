@@ -6,8 +6,10 @@ const REGION: RegionEnum = process.env.REGION! as RegionEnum;
 
 type messageType = {
     id: string,
-    url: string,
-    region: RegionEnum
+    type: string,
+    target: string,
+    region: RegionEnum,
+    config?: Record<string, unknown>
 }
 
 async function main() {
@@ -21,10 +23,12 @@ async function main() {
         const regionSpecificMessages = result.filter(message => message.message.region === REGION);
 
         let promises = regionSpecificMessages.map((message) =>
-            checkWebsiteHealth({
+            checkMonitorHealth({
                 id: message.message.id,
-                url: message.message.url,
-                region: message.message.region as RegionEnum
+                type: message.message.type,
+                target: message.message.target,
+                region: message.message.region as RegionEnum,
+                config: message.message.config ? JSON.parse(String(message.message.config)) : undefined
             })
         );
 
@@ -34,35 +38,45 @@ async function main() {
     }
 }
 
-async function checkWebsiteHealth(website: messageType) {
+async function checkMonitorHealth(job: messageType) {
     const startTime = Date.now();
-    let status: "UP" | "DOWN" = "UP";
+    let status: "UP" | "DOWN" | "DEGRADED" | "UNKNOWN" = "UP";
+    let details: Record<string, unknown> = {};
 
     try {
-        await axios.get(website.url);
-    } catch (error) {
+        if (job.type === "HTTP") {
+            const response = await axios.get(job.target);
+            details = { statusCode: response.status, responseTimeMs: Date.now() - startTime };
+        } else {
+            // TODO: implement PING/DNS/SSL checks
+            status = "UNKNOWN";
+        }
+    } catch (error: any) {
         status = "DOWN";
+        details = { error: error?.message || "request failed" };
     }
 
     const endTime = Date.now();
 
     try {
-        await prismaClient.websiteTick.create({
+        await prismaClient.monitorCheckResult.create({
             data: {
-                websiteId: website.id,
-                status: status,
-                responseTimeMs: endTime - startTime,
-                region: REGION
+                monitorId: job.id,
+                status,
+                startedAt: new Date(startTime),
+                finishedAt: new Date(endTime),
+                durationMs: endTime - startTime,
+                region: REGION,
+                details,
             }
         });
     } catch (dbError: any) {
         if (dbError.code === 'P2003') {
-            console.log(`Website ${website.id} no longer exists. Skipping tick.`);
+            console.log(`Monitor ${job.id} no longer exists. Skipping result.`);
         } else {
-            console.error(`Failed to save tick for website ${website.id}:`, dbError);
+            console.error(`Failed to save result for monitor ${job.id}:`, dbError);
         }
     }
-
 }
 
 

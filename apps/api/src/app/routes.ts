@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import authRoutes from "../modules/auth/auth.routes";
-import websitesRoutes from "../modules/websites/websites.routes";
+import monitorsRoutes from "../modules/monitors/monitors.routes";
 import statuspageRoutes from "../modules/statuspage/statuspage.routes";
 import notificationRoutes from "../modules/notification/notification.routes";
 import incidentsRoutes from "../modules/incidents/incidents.routes";
@@ -11,7 +11,7 @@ export const registerRoutes = (app: Express) => {
   });
 
   app.use(authRoutes);
-  app.use(websitesRoutes);
+  app.use(monitorsRoutes);
   app.use(statuspageRoutes);
   app.use(notificationRoutes);
   app.use(incidentsRoutes);

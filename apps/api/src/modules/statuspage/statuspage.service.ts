@@ -1,38 +1,38 @@
 import prismaClient from "@repo/db";
 
-export const getWebsiteById = async (id: string) => {
-  return prismaClient.website.findUnique({
+export const getMonitorById = async (id: string) => {
+  return prismaClient.monitor.findUnique({
     where: { id },
   });
 };
 
-export const createStatusPage = async (websiteId: string, title?: string, description?: string) => {
+export const createStatusPage = async (monitorId: string, title?: string, description?: string) => {
   return prismaClient.statusPage.create({
     data: {
       title: title || "",
       description: description || "",
-      websiteId,
+      monitorId,
     },
   });
 };
 
-export const getStatusPageByWebsiteId = async (websiteId: string) => {
+export const getStatusPageByMonitorId = async (monitorId: string) => {
   return prismaClient.statusPage.findUnique({
-    where: { websiteId },
-    include: { website: true },
+    where: { monitorId },
+    include: { monitor: true },
   });
 };
 
-export const getLatestTicks = async (websiteId: string, take = 500) => {
-  return prismaClient.websiteTick.findMany({
-    where: { websiteId },
+export const getLatestResults = async (monitorId: string, take = 500) => {
+  return prismaClient.monitorCheckResult.findMany({
+    where: { monitorId },
     take,
     orderBy: { createdAt: "desc" },
   });
 };
 
-export const deleteStatusPage = async (websiteId: string) => {
+export const deleteStatusPage = async (monitorId: string) => {
   return prismaClient.statusPage.delete({
-    where: { websiteId },
+    where: { monitorId },
   });
 };

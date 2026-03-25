@@ -14,11 +14,13 @@ async function connectRedis() {
 }
 connectRedis();
 
-type websiteData = {
-    url: string;
+type monitorJob = {
     id: string;
+    type: string;
+    target: string;
     regions: RegionEnum[];
-}
+    config?: Record<string, unknown>;
+};
 
 type redisStreamResultType = {
     name: string,
@@ -26,8 +28,10 @@ type redisStreamResultType = {
         id: string;
         message: {
             id: string,
-            url: string,
-            region: RegionEnum
+            type: string,
+            target: string,
+            region: RegionEnum,
+            config?: string
         }
     }[]
 }
@@ -36,21 +40,25 @@ type messageType = {
     id: string,
     message: {
         id: string,
-        url: string,
-        region: RegionEnum
+        type: string,
+        target: string,
+        region: RegionEnum,
+        config?: string
     }
 }
 
-const STREAM_NAME = "better-uptime:website";
+const STREAM_NAME = "better-uptime:monitor";
 
 
-async function xAddBulk(websites: websiteData[]) {
-    for (let i = 0; i < websites.length; i++) {
-        for (let regions = 0; regions < websites[i]!.regions.length; regions++) {
+async function xAddBulk(monitors: monitorJob[]) {
+    for (let i = 0; i < monitors.length; i++) {
+        for (let regions = 0; regions < monitors[i]!.regions.length; regions++) {
             await client.xAdd(STREAM_NAME, '*', {
-                url: websites[i]!.url,
-                id: websites[i]!.id,
-                region: websites[i]!.regions[regions] as string
+                id: monitors[i]!.id,
+                type: monitors[i]!.type,
+                target: monitors[i]!.target,
+                region: monitors[i]!.regions[regions] as string,
+                config: JSON.stringify(monitors[i]!.config || {}),
             })
         }
     }

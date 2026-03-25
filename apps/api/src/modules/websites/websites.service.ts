@@ -1,94 +1,34 @@
-import prismaClient, { REGION } from "@repo/db";
+import prismaClient, { MonitorType, REGION } from "@repo/db";
+import { createMonitor, deleteMonitorForUser } from "../monitors/monitors.service";
 
-export const findUserById = async (id: string) => {
-  return prismaClient.user.findUnique({
-    where: { id },
+export const createWebsiteMonitor = async (userId: string, url: string, regions: REGION[]) => {
+  const normalizedUrl = url.trim();
+  const friendlyName = (() => {
+    try {
+      const parsed = new URL(normalizedUrl);
+      return parsed.hostname || normalizedUrl;
+    } catch (_) {
+      return normalizedUrl;
+    }
+  })();
+
+  return createMonitor({
+    userId,
+    name: friendlyName,
+    type: MonitorType.HTTP,
+    target: normalizedUrl,
+    regions,
   });
 };
 
-export const createWebsite = async (url: string, regions: REGION[], userId: string) => {
-  return prismaClient.website.create({
-    data: {
-      url,
-      userId,
-      regions,
-    },
-  });
-};
-
-export const listWebsitesForUser = async (userId: string) => {
-  return prismaClient.website.findMany({
-    where: { userId },
+export const getWebsitesForUser = async (userId: string) => {
+  return prismaClient.monitor.findMany({
+    where: { userId, type: MonitorType.HTTP },
     include: { statusPage: true },
-  });
-};
-
-export const getWebsiteById = async (id: string) => {
-  return prismaClient.website.findFirst({
-    where: { id },
-    include: {
-      _count: {
-        select: { alerts: true },
-      },
-      websiteNotificationChannels: {
-        include: {
-          notificationChannel: true,
-        },
-      },
-    },
-  });
-};
-
-export const updateWebsiteChannels = async (websiteId: string, notificationChannelIds: string[]) => {
-  await prismaClient.websiteNotificationChannel.deleteMany({
-    where: { websiteId },
-  });
-
-  if (notificationChannelIds.length > 0) {
-    await prismaClient.websiteNotificationChannel.createMany({
-      data: notificationChannelIds.map((id) => ({
-        websiteId,
-        notificationChannelId: id,
-      })),
-    });
-  }
-};
-
-export const getLatestTicks = async (websiteId: string, take = 10) => {
-  return prismaClient.websiteTick.findMany({
-    where: { websiteId },
-    take,
     orderBy: { createdAt: "desc" },
   });
 };
 
-export const getTicksSince = async (websiteId: string, since: Date) => {
-  return prismaClient.websiteTick.findMany({
-    where: { websiteId, createdAt: { gte: since } },
-    orderBy: { createdAt: "asc" },
-  });
-};
-
-export const countTicksSince = async (websiteId: string, since: Date) => {
-  return prismaClient.websiteTick.count({
-    where: { websiteId, createdAt: { gte: since } },
-  });
-};
-
-export const countUpTicksSince = async (websiteId: string, since: Date) => {
-  return prismaClient.websiteTick.count({
-    where: { websiteId, createdAt: { gte: since }, status: "UP" },
-  });
-};
-
-export const deleteWebsiteTicks = async (websiteId: string) => {
-  return prismaClient.websiteTick.deleteMany({
-    where: { websiteId },
-  });
-};
-
-export const deleteWebsite = async (websiteId: string) => {
-  return prismaClient.website.delete({
-    where: { id: websiteId },
-  });
+export const deleteWebsiteForUser = async (userId: string, monitorId: string) => {
+  return deleteMonitorForUser(userId, monitorId);
 };
