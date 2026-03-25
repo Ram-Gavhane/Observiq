@@ -155,9 +155,9 @@ export async function sendEmail(notificationPayload: NotificationPayload) {
   `;
 
   const { data, error } = await resend.emails.send({
-    from: 'Better Uptime <onboarding@resend.dev>',
+    from: 'Observiq <onboarding@resend.dev>',
     to: emailAddress,
-    subject: `[Better Uptime] ${title} - ${notificationPayload.websiteUrl}`,
+    subject: `[Observiq] ${title} - ${notificationPayload.websiteUrl}`,
     html: message,
   });
 

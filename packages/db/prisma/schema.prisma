@@ -17,31 +17,47 @@ model User {
   id                   String                @id @default(uuid())
   email                String                @unique
   password             String
-  websites             Website[]
+  monitors             Monitor[]
   notificationChannels NotificationChannel[]
 }
 
-model Website {
-  id          String   @id @default(uuid())
-  url         String
+model Monitor {
+  id          String      @id @default(uuid())
   userId      String
+  name        String
+  type        MonitorType
+  target      String
   regions     REGION[]
-  timeAdded   DateTime @default(now())
-  nextCheckAt DateTime @default(now())
+  intervalSec Int         @default(60)
+  nextCheckAt DateTime    @default(now())
+  paused      Boolean     @default(false)
+  config      Json
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  ticks                       WebsiteTick[]
-  user                        User                         @relation(fields: [userId], references: [id])
+  user                        User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkResults                MonitorCheckResult[]
   statusPage                  StatusPage?
-  alerts                      Alerts[]
-  websiteNotificationChannels WebsiteNotificationChannel[]
+  incidents                   Incident[]
+  monitorNotificationChannels MonitorNotificationChannel[]
+
+  @@index([userId])
+  @@index([nextCheckAt, paused])
+}
+
+enum MonitorType {
+  HTTP
+  PING
+  DNS
+  SSL
 }
 
 model StatusPage {
   id          String   @id @default(uuid())
   title       String
   description String?
-  websiteId   String   @unique
-  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  monitorId   String   @unique
+  monitor     Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 }
 
@@ -51,19 +67,28 @@ enum REGION {
   INDIA
 }
 
-model WebsiteTick {
-  id             String        @id @default(uuid())
-  responseTimeMs Int
-  status         WebsiteStatus
-  region         REGION
-  website        Website       @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  websiteId      String
-  createdAt      DateTime      @default(now())
+model MonitorCheckResult {
+  id         String        @id @default(uuid())
+  monitorId  String
+  region     REGION
+  status     MonitorStatus
+  startedAt  DateTime
+  finishedAt DateTime
+  durationMs Int?
+  summary    String?
+  details    Json
+  createdAt  DateTime      @default(now())
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId, createdAt])
+  @@index([monitorId, region, createdAt])
 }
 
-enum WebsiteStatus {
+enum MonitorStatus {
   UP
   DOWN
+  DEGRADED
   UNKNOWN
 }
 
@@ -77,58 +102,67 @@ model NotificationChannel {
   updatedAt DateTime @updatedAt
 
   user                        User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  websiteNotificationChannels WebsiteNotificationChannel[]
-  alertNotification           AlertNotification[]
+  monitorNotificationChannels MonitorNotificationChannel[]
+  alertDeliveries             AlertDelivery[]
 }
 
-model WebsiteNotificationChannel {
-  websiteId String
-  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-
+model MonitorNotificationChannel {
+  monitorId             String
   notificationChannelId String
   notificationChannel   NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+  monitor               Monitor             @relation(fields: [monitorId], references: [id], onDelete: Cascade)
 
-  @@id([websiteId, notificationChannelId])
+  @@id([monitorId, notificationChannelId])
 }
 
-model Alerts {
-  id            String    @id @default(cuid())
-  websiteId     String
-  status        String    @default("triggered") // "triggered" | "escalated" | "resolved"
-  alertCount    Int       @default(0)
-  escalated     Boolean   @default(false)
-  triggeredAt   DateTime  @default(now())
+model Incident {
+  id            String         @id @default(cuid())
+  monitorId     String
+  status        IncidentStatus @default(OPEN)
+  severity      String?
+  startedAt     DateTime       @default(now())
   resolvedAt    DateTime?
   lastAlertedAt DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  website           Website             @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  incidentEvents    IncidentEvent[]
-  alertNotification AlertNotification[]
+  monitor         Monitor         @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  incidentEvents  IncidentEvent[]
+  alertDeliveries AlertDelivery[]
 
-  @@index([websiteId])
+  @@index([monitorId])
+  @@index([monitorId, status])
 }
 
-model AlertNotification {
+enum IncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model AlertDelivery {
   id                    String   @id @default(uuid())
-  alertId               String
+  incidentId            String
   notificationChannelId String
   eventType             String
+  status                String?
+  providerMessage       String?
   createdAt             DateTime @default(now())
 
-  alert               Alerts              @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  incident            Incident            @relation(fields: [incidentId], references: [id], onDelete: Cascade)
   notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
 
-  @@index([alertId])
+  @@index([incidentId])
 }
 
 model IncidentEvent {
-  id        String   @id @default(cuid())
-  alertId   String
-  type      String
-  message   String
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  incidentId String
+  type       String
+  message    String
+  createdAt  DateTime @default(now())
 
-  alert Alerts @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
 
-  @@index([alertId])
+  @@index([incidentId])
 }
