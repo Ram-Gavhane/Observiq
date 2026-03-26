@@ -1,28 +1,37 @@
-import prismaClient, { REGION as RegionEnum } from "@repo/db";
+import prismaClient, { Prisma, REGION as RegionEnum } from "@repo/db";
 import { xAckBulk, xReadGroup } from "@repo/redisstreams";
-import axios from "axios";
+import { runHttpCheck } from "./checks/http";
+import { runPingCheck } from "./checks/ping";
+import { runDnsCheck } from "./checks/dns";
+import { runSslCheck } from "./checks/ssl";
 
 const REGION: RegionEnum = process.env.REGION! as RegionEnum;
 
-type messageType = {
-    id: string,
-    type: string,
-    target: string,
-    region: RegionEnum,
-    config?: Record<string, unknown>
-}
+type MonitorJob = {
+    id: string;
+    type: string;
+    target: string;
+    region: RegionEnum;
+    config?: Record<string, unknown>;
+};
+
+type CheckExecutionResult = {
+    status: "UP" | "DOWN" | "DEGRADED" | "UNKNOWN";
+    startedAt: Date;
+    finishedAt: Date;
+    durationMs?: number;
+    summary?: string;
+    details: Record<string, unknown>;
+};
 
 async function main() {
     while (true) {
         const result = await xReadGroup(REGION, `${REGION}-worker-1`, 5000);
-        if (!result) {
-            continue;
-        }
+        if (!result) continue;
 
-        // Only process health checks meant for this specific region
         const regionSpecificMessages = result.filter(message => message.message.region === REGION);
 
-        let promises = regionSpecificMessages.map((message) =>
+        const promises = regionSpecificMessages.map((message) =>
             checkMonitorHealth({
                 id: message.message.id,
                 type: message.message.type,
@@ -38,36 +47,40 @@ async function main() {
     }
 }
 
-async function checkMonitorHealth(job: messageType) {
-    const startTime = Date.now();
-    let status: "UP" | "DOWN" | "DEGRADED" | "UNKNOWN" = "UP";
-    let details: Record<string, unknown> = {};
-
-    try {
-        if (job.type === "HTTP") {
-            const response = await axios.get(job.target);
-            details = { statusCode: response.status, responseTimeMs: Date.now() - startTime };
-        } else {
-            // TODO: implement PING/DNS/SSL checks
-            status = "UNKNOWN";
-        }
-    } catch (error: any) {
-        status = "DOWN";
-        details = { error: error?.message || "request failed" };
+async function executeMonitorJob(job: MonitorJob): Promise<CheckExecutionResult> {
+    switch (job.type) {
+        case "HTTP":
+            return runHttpCheck(job);
+        case "PING":
+            return runPingCheck(job);
+        case "DNS":
+            return runDnsCheck(job);
+        case "SSL":
+            return runSslCheck(job);
+        default:
+            return {
+                status: "UNKNOWN",
+                startedAt: new Date(),
+                finishedAt: new Date(),
+                details: { error: "Unsupported monitor type" },
+            };
     }
+}
 
-    const endTime = Date.now();
+async function checkMonitorHealth(job: MonitorJob) {
+    const result = await executeMonitorJob(job);
 
     try {
         await prismaClient.monitorCheckResult.create({
             data: {
                 monitorId: job.id,
-                status,
-                startedAt: new Date(startTime),
-                finishedAt: new Date(endTime),
-                durationMs: endTime - startTime,
+                status: result.status,
+                startedAt: result.startedAt,
+                finishedAt: result.finishedAt,
+                durationMs: result.durationMs,
                 region: REGION,
-                details: JSON.stringify(details),
+                summary: result.summary,
+                details: result.details as Prisma.InputJsonValue,
             }
         });
     } catch (dbError: any) {
@@ -78,7 +91,5 @@ async function checkMonitorHealth(job: messageType) {
         }
     }
 }
-
-
 
 main();

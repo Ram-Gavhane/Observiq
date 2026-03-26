@@ -32,6 +32,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { MonitorTypeDetails } from "@/components/MonitorTypeDetails";
 
 interface Tick {
   id: string;
@@ -333,40 +334,9 @@ export default function MonitorDetailsPage({ params }: { params: Promise<{ id: s
             </div>
           )}
 
-          {monitor.type === "SSL" && ticks[0]?.details?.sslInfo && (
-            <div className="grid gap-6">
-              <h2 className="text-xl font-bold">SSL Certificate Info</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="bg-card border border-border p-4 rounded-2xl">
-                  <div className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-wider">Days to Expiry</div>
-                  <div className={cn(
-                    "text-2xl font-black",
-                    ticks[0].details.sslInfo.daysRemaining < 30 ? "text-destructive" : "text-emerald-500"
-                  )}>
-                    {ticks[0].details.sslInfo.daysRemaining} days
-                  </div>
-                </div>
-                <div className="bg-card border border-border p-4 rounded-2xl">
-                  <div className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-wider">Issuer</div>
-                  <div className="text-lg font-bold truncate">
-                    {ticks[0].details.sslInfo.issuer}
-                  </div>
-                </div>
-                <div className="bg-card border border-border p-4 rounded-2xl">
-                  <div className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-wider">Valid From</div>
-                  <div className="text-lg font-semibold">
-                    {new Date(ticks[0].details.sslInfo.validFrom).toLocaleDateString()}
-                  </div>
-                </div>
-                <div className="bg-card border border-border p-4 rounded-2xl">
-                  <div className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-wider">Valid To</div>
-                  <div className="text-lg font-semibold">
-                    {new Date(ticks[0].details.sslInfo.validTo).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Type-Specific Details Section */}
+          <MonitorTypeDetails monitor={monitor} latestCheck={ticks[0]} />
+
 
           <div className="grid gap-6">
             <h2 className="text-xl font-bold">Latest Status Checks</h2>
@@ -406,11 +376,12 @@ export default function MonitorDetailsPage({ params }: { params: Promise<{ id: s
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <LucideClock className="h-4 w-4 opacity-40" />
-                              <span className="font-semibold tabular-nums">
-                                {monitor.type === "HTTP" || monitor.type === "PING" ? `${tick.durationMs}ms` : '-'}
+                              {monitor.type === "SSL" ? <LucideShield className="h-4 w-4 opacity-40" /> : <LucideClock className="h-4 w-4 opacity-40" />}
+                              <span className="font-semibold tabular-nums text-xs">
+                                {monitor.type === "HTTP" || monitor.type === "PING" ? `${tick.durationMs}ms` : ''}
+                                {monitor.type === "SSL" && tick.details?.daysRemaining !== undefined ? `${tick.details.daysRemaining}d left` : ''}
                                 {monitor.type === "DNS" && tick.details?.responseStatus ? tick.details.responseStatus : ''}
-                                {monitor.type === "SSL" && tick.details?.sslInfo?.daysRemaining ? `${tick.details.sslInfo.daysRemaining}d` : ''}
+                                {!["HTTP", "PING", "SSL", "DNS"].includes(monitor.type) && '-'}
                               </span>
                             </div>
                           </td>
