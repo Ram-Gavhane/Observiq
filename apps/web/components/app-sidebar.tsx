@@ -38,18 +38,18 @@ export function AppSidebar() {
           
           <button 
             onClick={toggleSidebar}
-            className="hidden md:flex h-8 w-8 items-center justify-center rounded-md hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden text-muted-foreground transition-colors"
+            className="hidden md:flex h-8 w-8 items-center justify-center rounded-lg hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden text-muted-foreground transition-colors"
           >
-            <PanelLeft className="h-5 w-5" />
+            <PanelLeft className="h-4 w-4" />
           </button>
 
           {/* Collapsed State Content */}
           <div 
             onClick={toggleSidebar}
-            className="hidden group-data-[collapsible=icon]:flex group/toggle h-8 w-8 cursor-pointer items-center justify-center relative rounded-md hover:bg-sidebar-accent transition-colors"
+            className="hidden group-data-[collapsible=icon]:flex group/toggle h-8 w-8 cursor-pointer items-center justify-center relative rounded-lg hover:bg-sidebar-accent transition-colors"
           >
-            <img src="/icon.svg" alt="Observiq" className="absolute h-6 w-6 transition-all duration-200 group-hover/toggle:opacity-0 group-hover/toggle:scale-75" />
-            <PanelLeft className="absolute h-5 w-5 text-muted-foreground opacity-0 transition-all duration-200 group-hover/toggle:opacity-100 group-hover/toggle:scale-100 scale-75" />
+            <img src="/icon.svg" alt="Observiq" className="absolute h-5 w-5 transition-all duration-200 group-hover/toggle:opacity-0 group-hover/toggle:scale-75" />
+            <PanelLeft className="absolute h-4 w-4 text-muted-foreground opacity-0 transition-all duration-200 group-hover/toggle:opacity-100 group-hover/toggle:scale-100 scale-75" />
           </div>
 
         </div>

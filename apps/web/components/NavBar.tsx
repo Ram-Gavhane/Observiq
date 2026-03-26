@@ -43,7 +43,7 @@ export function NavBar() {
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-background border border-border py-1 z-50">
+            <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-xl bg-background border border-border py-1 z-50">
               <Link
                 href="/profile"
                 className="flex items-center px-4 py-2 text-sm opacity-80 hover:opacity-100 hover:bg-muted transition-colors"

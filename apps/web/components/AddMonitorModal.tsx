@@ -168,12 +168,12 @@ export function AddMonitorModal({ onSuccess }: AddMonitorModalProps) {
       if (!val) resetForm();
     }}>
       <DialogTrigger asChild>
-        <Button className="rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 bg-primary text-primary-foreground font-semibold px-6 h-11">
-          <LucidePlus className="mr-2 h-5 w-5" />
+        <Button className="shadow-sm hover:shadow-md transition-all active:scale-95 bg-primary text-primary-foreground font-semibold px-4 h-9">
+          <LucidePlus className="mr-2 h-4 w-4" />
           Add Monitor
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px] rounded-3xl border-border bg-background shadow-2xl overflow-hidden p-0">
+      <DialogContent className="sm:max-w-[480px] rounded-xl border-border bg-background shadow-2xl overflow-hidden p-0">
         <div className="p-6">
           <DialogHeader className="mb-6">
             <DialogTitle className="text-2xl font-bold tracking-tight">
@@ -196,18 +196,18 @@ export function AddMonitorModal({ onSuccess }: AddMonitorModalProps) {
                     nextStep();
                   }}
                   className={cn(
-                    "flex flex-col items-start p-4 rounded-2xl border-2 text-left transition-all hover:border-primary/50 group",
-                    type === t.id ? "border-primary bg-primary/5" : "border-border bg-zinc-50 dark:bg-zinc-900"
+                    "flex flex-col items-start p-4 rounded-lg border text-left transition-all hover:border-primary/50 group",
+                    type === t.id ? "border-primary bg-primary/5" : "border-border bg-muted/30"
                   )}
                 >
                   <div className={cn(
-                    "h-10 w-10 rounded-xl flex items-center justify-center mb-3 transition-colors",
-                    type === t.id ? "bg-primary text-primary-foreground" : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700"
+                    "h-8 w-8 rounded-md flex items-center justify-center mb-3 transition-colors",
+                    type === t.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:bg-muted-foreground/10"
                   )}>
-                    <t.icon className="h-5 w-5" />
+                    <t.icon className="h-4 w-4" />
                   </div>
                   <span className="font-bold text-sm mb-1">{t.label}</span>
-                  <p className="text-xs text-muted-foreground leading-snug">
+                  <p className="text-[11px] text-muted-foreground leading-tight">
                     {t.description}
                   </p>
                 </button>
@@ -420,14 +420,14 @@ export function AddMonitorModal({ onSuccess }: AddMonitorModalProps) {
               <Button 
                 variant="outline" 
                 onClick={prevStep}
-                className="h-11 px-4 rounded-xl border-border"
+                className="h-10 px-3 rounded-lg border-border"
               >
                 <LucideArrowLeft className="h-4 w-4" />
               </Button>
               <Button 
                 onClick={handleSubmit} 
                 disabled={loading}
-                className="flex-1 h-11 rounded-xl font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="flex-1 h-10 rounded-lg font-bold transition-all active:scale-[0.98]"
               >
                 {loading ? (
                   <>
