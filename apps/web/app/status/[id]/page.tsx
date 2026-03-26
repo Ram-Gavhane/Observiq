@@ -22,16 +22,17 @@ interface Tick {
   createdAt: string;
 }
 
-interface Website {
+interface Monitor {
   id: string;
-  url: string;
+  name: string;
+  target: string;
 }
 
 interface StatusPage {
   id: string;
   title: string;
   description: string;
-  website: Website;
+  monitor: Monitor;
 }
 
 export default function PublicStatusPage({ params }: { params: Promise<{ id: string }> }) {
@@ -133,7 +134,7 @@ export default function PublicStatusPage({ params }: { params: Promise<{ id: str
                 </div>
                 <div>
                   <h2 className="text-3xl font-extrabold text-emerald-900 dark:text-emerald-50">All Systems Operational</h2>
-                  <p className="mt-2 font-medium text-emerald-700/80 dark:text-emerald-200/60">We are currently not experiencing any issues with {statusPage.website.url}.</p>
+                  <p className="mt-2 font-medium text-emerald-700/80 dark:text-emerald-200/60">We are currently not experiencing any issues with {statusPage.monitor.target}.</p>
                 </div>
               </>
             ) : (
@@ -143,7 +144,7 @@ export default function PublicStatusPage({ params }: { params: Promise<{ id: str
                 </div>
                 <div>
                   <h2 className="text-3xl font-extrabold text-destructive">Partial Outage Detected</h2>
-                  <p className="mt-2 font-medium text-destructive/80">We are currently experiencing connectivity issues with {statusPage.website.url}.</p>
+                  <p className="mt-2 font-medium text-destructive/80">We are currently experiencing connectivity issues with {statusPage.monitor.target}.</p>
                 </div>
               </>
             )}
