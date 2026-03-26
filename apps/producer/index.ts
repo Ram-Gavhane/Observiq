@@ -1,23 +1,18 @@
-import prismaClient from "@repo/db";
+import { claimDueMonitors } from "@repo/db";
 import { client, xAddBulk } from "@repo/redisstreams";
 
 async function main() {
-    const monitors = await prismaClient.monitor.findMany({
-        where: { nextCheckAt: { lte: new Date() }, paused: false }
-    });
-
+    const monitors = await claimDueMonitors(1 * 60 * 1000);
+    console.log("monitors", monitors);
     await xAddBulk(monitors.map(monitor => ({
         id: monitor.id,
         type: monitor.type,
         target: monitor.target,
         regions: monitor.regions,
-        config: monitor.config,
+        config: monitor.config as Record<string, unknown>,
     })));
 
-    await prismaClient.monitor.updateMany({
-        where: { id: { in: monitors.map(m => m.id) } },
-        data: { nextCheckAt: new Date(Date.now() + 1 * 60 * 1000) }
-    });
+
 }
 
 async function createConsumerGroup() {

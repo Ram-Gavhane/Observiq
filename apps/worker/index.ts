@@ -67,7 +67,7 @@ async function checkMonitorHealth(job: messageType) {
                 finishedAt: new Date(endTime),
                 durationMs: endTime - startTime,
                 region: REGION,
-                details,
+                details: JSON.stringify(details),
             }
         });
     } catch (dbError: any) {
