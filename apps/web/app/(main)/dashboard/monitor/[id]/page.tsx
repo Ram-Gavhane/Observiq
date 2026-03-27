@@ -18,7 +18,8 @@ import {
   LucideActivity,
   LucideGlobe,
   LucideDatabase,
-  LucideCalendar
+  LucideCalendar,
+  LucideLock
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -208,7 +209,13 @@ export default function MonitorDetailsPage({ params }: { params: Promise<{ id: s
                   </span>
                 </div>
                 <h1 className="text-3xl font-extrabold tracking-tight truncate max-w-2xl">{monitor.name}</h1>
-                <p className="text-muted-foreground mt-1 truncate max-w-xl">{monitor.target}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-muted-foreground truncate max-w-xl">{monitor.target}</p>
+                  <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Created {new Date(monitor.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={handleDelete}
@@ -245,24 +252,57 @@ export default function MonitorDetailsPage({ params }: { params: Promise<{ id: s
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                  <LucideCalendar className="h-4 w-4 opacity-50" />
-                  Monitor active for
-                </h3>
-                <div className="text-xl font-bold">
-                  {monitor.createdAt ? formatUptime(monitor.createdAt) : 'N/A'}
-                </div>
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                  <LucideClock className="h-4 w-4 opacity-50" />
-                  Last checked
-                </h3>
-                <div className="text-xl font-bold">
-                  {formatLastChecked(ticks[0]?.createdAt)}
-                </div>
-              </div>
+              {monitor.type === "SSL" ? (
+                <>
+                  <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                      <LucideShield className="h-4 w-4 opacity-50" />
+                      Days to Expiry
+                    </h3>
+                    <div className={cn(
+                      "text-xl font-bold",
+                      (ticks[0]?.details?.daysRemaining ?? 100) < 30 ? "text-destructive" : ""
+                    )}>
+                      {ticks[0]?.details?.daysRemaining !== undefined ? `${ticks[0].details.daysRemaining} days` : 'N/A'}
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                      <LucideLock className="h-4 w-4 opacity-50" />
+                      Issuer
+                    </h3>
+                    <div className="text-xl font-bold truncate">
+                      {ticks[0]?.details?.issuer?.O || 'Unknown'}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                      <LucideClock className="h-4 w-4 opacity-50" />
+                      Avg. Response Time
+                    </h3>
+                    <div className="text-xl font-bold">
+                      {insights?.responseTimeTrends && insights.responseTimeTrends.length > 0
+                        ? `${Math.round(insights.responseTimeTrends.reduce((acc: number, curr: any) => acc + curr.responseTime, 0) / insights.responseTimeTrends.length)}ms`
+                        : '---'}
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                      <LucideActivity className="h-4 w-4 opacity-50" />
+                      Last Status
+                    </h3>
+                    <div className={cn(
+                      "text-xl font-bold",
+                      ticks[0]?.status === "UP" ? "text-emerald-500" : "text-destructive"
+                    )}>
+                      {ticks[0]?.status || 'Unknown'}
+                    </div>
+                  </div>
+                </>
+              )}
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
                   <LucideAlertTriangle className="h-4 w-4 opacity-50" />
@@ -351,7 +391,9 @@ export default function MonitorDetailsPage({ params }: { params: Promise<{ id: s
                     <thead>
                       <tr className="border-b border-border bg-zinc-50/50 dark:bg-zinc-900/50">
                         <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-muted-foreground">Status</th>
-                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-muted-foreground">Metric</th>
+                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-muted-foreground">
+                          {monitor.type === "SSL" ? "Expiry" : monitor.type === "DNS" ? "Resolution" : "Response"}
+                        </th>
                         <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-muted-foreground text-center">Region</th>
                         <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-muted-foreground text-right">Time</th>
                       </tr>
@@ -376,11 +418,11 @@ export default function MonitorDetailsPage({ params }: { params: Promise<{ id: s
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              {monitor.type === "SSL" ? <LucideShield className="h-4 w-4 opacity-40" /> : <LucideClock className="h-4 w-4 opacity-40" />}
-                              <span className="font-semibold tabular-nums text-xs">
+                              {monitor.type === "SSL" ? <LucideShield className="h-3.5 w-3.5 opacity-40" /> : <LucideClock className="h-3.5 w-3.5 opacity-40" />}
+                              <span className="font-bold tabular-nums text-xs">
                                 {monitor.type === "HTTP" || monitor.type === "PING" ? `${tick.durationMs}ms` : ''}
                                 {monitor.type === "SSL" && tick.details?.daysRemaining !== undefined ? `${tick.details.daysRemaining}d left` : ''}
-                                {monitor.type === "DNS" && tick.details?.responseStatus ? tick.details.responseStatus : ''}
+                                {monitor.type === "DNS" && (tick.details?.resolvedIp || tick.details?.responseStatus) ? (tick.details.resolvedIp || tick.details.responseStatus) : ''}
                                 {!["HTTP", "PING", "SSL", "DNS"].includes(monitor.type) && '-'}
                               </span>
                             </div>
