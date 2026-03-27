@@ -45,6 +45,30 @@ model Monitor {
   @@index([nextCheckAt, paused])
 }
 
+// type HttpConfig = {
+//   method?: "GET" | "HEAD";
+//   timeoutMs?: number;
+//   expectedStatusCodes?: number[];
+//   followRedirects?: boolean;
+// };
+
+// type PingConfig = {
+//   timeoutMs?: number;
+//   packetCount?: number;
+// };
+
+// type DnsConfig = {
+//   recordType: "A" | "AAAA" | "CNAME" | "MX" | "TXT";
+//   expectedValues?: string[];
+//   resolver?: string;
+// };
+
+// type SslConfig = {
+//   port?: number;
+//   serverName?: string;
+//   expiryThresholdDays?: number;
+// };
+
 enum MonitorType {
   HTTP
   PING
