@@ -17,6 +17,7 @@ import {
   LucideShieldCheck
 } from "lucide-react";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // Client-side only date formatter to prevent hydration mismatch
 function FormattedDate({ date, formatStr = "PP" }: { date: string | Date | null | undefined, formatStr?: string }) {
@@ -150,7 +151,8 @@ export default function IncidentsPage() {
   }
 
   const getSeverityBadge = (incident: Incident) => {
-    if (incident.status === "resolved") {
+    const status = incident.status.toLowerCase();
+    if (status === "resolved") {
       return (
         <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
           Resolved
@@ -211,13 +213,16 @@ export default function IncidentsPage() {
                       <tr
                         key={incident.id}
                         onClick={() => handleRowClick(incident)}
-                        className="group cursor-pointer transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10"
+                        className={cn(
+                          "group cursor-pointer transition-all hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10",
+                          incident.status.toLowerCase() === 'resolved' && "opacity-75 grayscale-[0.3]"
+                        )}
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                              {incident.status === 'resolved' ? (
-                                <LucideCheckCircle2 className="h-4 w-4 text-emerald-500" />
+                              {incident.status.toLowerCase() === 'resolved' ? (
+                                <LucideShieldCheck className="h-4 w-4 text-emerald-600" />
                               ) : (
                                 <LucideAlertOctagon className="h-4 w-4 text-rose-500" />
                               )}
@@ -229,10 +234,13 @@ export default function IncidentsPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2 capitalize">
-                            {incident.status === 'resolved' && <LucideCheckCircle2 className="h-4 w-4 text-emerald-500" />}
-                            {incident.status === 'triggered' && <LucideAlertTriangle className="h-4 w-4 text-orange-500" />}
-                            {incident.status === 'escalated' && <LucideAlertTriangle className="h-4 w-4 text-rose-500" />}
-                            <span className="font-medium text-muted-foreground">{incident.status}</span>
+                            {incident.status.toLowerCase() === 'resolved' && <LucideShieldCheck className="h-4 w-4 text-emerald-600" />}
+                            {incident.status.toLowerCase() === 'triggered' && <LucideAlertTriangle className="h-4 w-4 text-orange-500" />}
+                            {incident.status.toLowerCase() === 'escalated' && <LucideAlertTriangle className="h-4 w-4 text-rose-500" />}
+                            <span className={cn(
+                              "font-medium",
+                              incident.status.toLowerCase() === 'resolved' ? "text-emerald-700/70" : "text-muted-foreground"
+                            )}>{incident.status.toLowerCase()}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
