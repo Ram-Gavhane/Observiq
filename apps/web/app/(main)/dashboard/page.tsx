@@ -17,6 +17,21 @@ import axios from "axios";
 import { toast } from "sonner";
 import { AddMonitorModal } from "@/components/AddMonitorModal";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+
+// Client-side only date formatter to prevent hydration mismatch
+function FormattedDate({ date, formatStr = "PP" }: { date: string | Date | null | undefined, formatStr?: string }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  
+  if (!mounted || !date) return <span className="animate-pulse bg-muted rounded w-16 h-3 inline-block" />;
+  
+  try {
+    return <span>{format(new Date(date), formatStr)}</span>;
+  } catch {
+    return <span>Invalid Date</span>;
+  }
+}
 
 interface Monitor {
   id: string;
@@ -139,12 +154,27 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Global Status Banner */}
-      {monitors.length > 0 && (
-        <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-emerald-700 dark:text-emerald-400">
-          <LucideCheckCircle2 className="h-5 w-5 shrink-0" />
+      {monitors.length > 0 && stats && (
+        <div className={cn(
+          "flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors",
+          stats.operationalMonitors === stats.totalMonitors 
+            ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
+            : "border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-400"
+        )}>
+          {stats.operationalMonitors === stats.totalMonitors ? (
+            <LucideCheckCircle2 className="h-5 w-5 shrink-0" />
+          ) : (
+            <LucideAlertCircle className="h-5 w-5 shrink-0" />
+          )}
           <div className="flex flex-1 items-center justify-between">
-            <span className="text-sm font-semibold tracking-tight">All systems are operational</span>
-            <span className="hidden text-xs opacity-70 md:inline">Last checked: Just now</span>
+            <span className="text-sm font-semibold tracking-tight">
+              {stats.operationalMonitors === stats.totalMonitors 
+                ? "All systems are operational"
+                : `${stats.totalMonitors - stats.operationalMonitors} system${stats.totalMonitors - stats.operationalMonitors > 1 ? 's' : ''} experiencing issues`}
+            </span>
+            <span className="hidden text-xs opacity-70 md:inline flex items-center gap-1">
+              Last updated: {monitors[0]?.lastCheckedAt ? <FormattedDate date={monitors[0].lastCheckedAt} formatStr="HH:mm:ss" /> : "Just now"}
+            </span>
           </div>
         </div>
       )}

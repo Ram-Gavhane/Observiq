@@ -16,6 +16,21 @@ import {
   LucideBellRing,
   LucideShieldCheck
 } from "lucide-react";
+import { format } from "date-fns";
+
+// Client-side only date formatter to prevent hydration mismatch
+function FormattedDate({ date, formatStr = "PP" }: { date: string | Date | null | undefined, formatStr?: string }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  
+  if (!mounted || !date) return <span className="animate-pulse bg-muted rounded w-16 h-3 inline-block" />;
+  
+  try {
+    return <span>{format(new Date(date), formatStr)}</span>;
+  } catch {
+    return <span>Invalid Date</span>;
+  }
+}
 
 interface Incident {
   id: string;
@@ -27,6 +42,7 @@ interface Incident {
   startedAt: string;
   resolvedAt: string | null;
   lastAlertedAt: string | null;
+  createdAt: string;
   monitor?: {
     id: string;
     name: string;
@@ -230,12 +246,12 @@ export default function IncidentsPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                            <span className="text-muted-foreground">
-                              {new Date(incident.startedAt).toLocaleDateString()}
+                            <span className="text-muted-foreground font-medium">
+                              <FormattedDate date={incident.startedAt || incident.createdAt} formatStr="MMM d, yyyy" />
                             </span>
                             <span className="text-xs text-muted-foreground/70 flex items-center gap-1">
                               <LucideClock className="h-3 w-3" />
-                              {new Date(incident.startedAt).toLocaleTimeString()}
+                              <FormattedDate date={incident.startedAt || incident.createdAt} formatStr="HH:mm:ss" />
                             </span>
                           </div>
                         </td>
@@ -284,7 +300,7 @@ export default function IncidentsPage() {
                                         <p className="text-sm text-muted-foreground">{event.message}</p>
                                         <span className="text-xs text-muted-foreground/60 flex items-center gap-1 mt-0.5">
                                           <LucideClock className="h-3 w-3" />
-                                          {new Date(event.createdAt).toLocaleString()}
+                                          <FormattedDate date={event.createdAt} formatStr="PPpp" />
                                         </span>
                                       </div>
                                     </div>
