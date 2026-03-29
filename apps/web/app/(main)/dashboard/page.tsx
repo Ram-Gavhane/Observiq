@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -23,10 +23,18 @@ interface Monitor {
   name: string;
   type: string;
   target: string;
-  status?: "up" | "down" | "pending";
+  status?: "up" | "down" | "degraded" | "unknown";
   regions?: string[];
-  latency?: number;
+  latency?: number | null;
   uptime?: number;
+  lastCheckedAt?: string | null;
+}
+
+interface DashboardStats {
+  totalMonitors: number;
+  operationalMonitors: number;
+  averageLatencyMs: number;
+  averageUptimePercent: number;
 }
 
 // Simple Sparkline component using SVG
@@ -85,6 +93,7 @@ function StatusBulb({ status }: { status?: string }) {
 
 export default function DashboardPage() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -94,37 +103,30 @@ export default function DashboardPage() {
       router.push("/signin");
       return;
     }
-    fetchMonitors();
+    fetchDashboardData();
   }, []);
 
-  const fetchMonitors = async () => {
+  const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/get-monitors", {
+      const response = await axios.get(process.env.NEXT_PUBLIC_API_URL + "/dashboard/stats", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Mocking some data for professional look if API doesn't provide it
-      const enhancedMonitors = response.data.monitors.map((m: any) => ({
+      const { monitors, stats } = response.data;
+      const normalizedMonitors = monitors.map((m: Monitor) => ({
         ...m,
-        status: m.status || "up",
-        latency: Math.floor(Math.random() * 200) + 50,
-        uptime: 100 - (Math.random() * 0.1),
+        status: (m.status as Monitor["status"]) || "unknown",
+        latency: m.latency ?? null,
+        uptime: m.uptime ?? 0,
       }));
-      setMonitors(enhancedMonitors);
+      setMonitors(normalizedMonitors);
+      setStats(stats);
     } catch (err: unknown) {
       toast.error("Failed to fetch monitors");
     } finally {
       setLoading(false);
     }
   };
-
-  const stats = useMemo(() => {
-    if (monitors.length === 0) return null;
-    const upCount = monitors.filter(m => m.status !== "down").length;
-    const avgLatency = Math.round(monitors.reduce((acc, m) => acc + (m.latency || 0), 0) / monitors.length);
-    const avgUptime = (monitors.reduce((acc, m) => acc + (m.uptime || 100), 0) / monitors.length).toFixed(3);
-    return { upCount, total: monitors.length, avgLatency, avgUptime };
-  }, [monitors]);
 
   if (loading) {
     return (
@@ -151,10 +153,10 @@ export default function DashboardPage() {
       {stats && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { label: "Total Monitors", value: stats.total, icon: LucideGlobe, color: "text-blue-500" },
-            { label: "Operational", value: `${stats.upCount}/${stats.total}`, icon: LucideActivity, color: "text-emerald-500" },
-            { label: "Avg. Latency", value: `${stats.avgLatency}ms`, icon: LucideZap, color: "text-amber-500" },
-            { label: "Avg. Uptime", value: `${stats.avgUptime}%`, icon: LucideActivity, color: "text-indigo-500" },
+            { label: "Total Monitors", value: stats.totalMonitors, icon: LucideGlobe, color: "text-blue-500" },
+            { label: "Operational", value: `${stats.operationalMonitors}/${stats.totalMonitors}`, icon: LucideActivity, color: "text-emerald-500" },
+            { label: "Avg. Latency", value: `${stats.averageLatencyMs}ms`, icon: LucideZap, color: "text-amber-500" },
+            { label: "Avg. Uptime", value: `${stats.averageUptimePercent.toFixed(2)}%`, icon: LucideActivity, color: "text-indigo-500" },
           ].map((stat, i) => (
             <div key={i} className="rounded-xl border border-border bg-card p-5 shadow-sm">
               <div className="flex items-center justify-between">
@@ -171,7 +173,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Monitors</h1>
-          <AddMonitorModal onSuccess={fetchMonitors} />
+          <AddMonitorModal onSuccess={fetchDashboardData} />
         </div>
 
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
@@ -222,8 +224,12 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex flex-col items-end">
-                          <span className="font-mono font-bold">{monitor.latency}ms</span>
-                          <span className="text-[10px] text-muted-foreground">{monitor.uptime}%</span>
+                          <span className="font-mono font-bold">
+                            {monitor.latency != null ? `${monitor.latency}ms` : "—"}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {monitor.uptime != null ? `${monitor.uptime}%` : "—"}
+                          </span>
                         </div>
                       </td>
                     </tr>
