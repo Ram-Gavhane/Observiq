@@ -1,176 +1,204 @@
-import prismaClient from "@repo/db";
+import prismaClient, {
+    Prisma,
+    IncidentStatus,
+    MonitorStatus,
+    type NotificationChannel,
+} from "@repo/db";
 import { sendNotification } from "@repo/notifications";
 
-async function handleAlertLogic() {
-    const CONSECUTIVE_FAILURES_THRESHOLD = 2;
+const CONSECUTIVE_FAILURES_THRESHOLD = 2; // how many consecutive DOWNs trigger an incident
+const SAMPLE_RESULTS = 5; // how many recent results to look at per monitor
+const ALERT_COOLDOWN_MINUTES = 10;
+const STALE_CHECK_MINUTES = 15; // if we haven't seen a result recently, treat as unknown
 
-    const websitesDown = await prismaClient.$queryRaw<{ websiteId: string }[]>`
-    SELECT "websiteId"
-    FROM (
-        SELECT "websiteId", "status", "region",
-               ROW_NUMBER() OVER (PARTITION BY "websiteId", "region" ORDER BY "createdAt" DESC) as rn
-        FROM "WebsiteTick"
-    ) ranked
-    WHERE rn <= ${CONSECUTIVE_FAILURES_THRESHOLD}
-    GROUP BY "websiteId", "region"
-    HAVING COUNT(*) = ${CONSECUTIVE_FAILURES_THRESHOLD}
-       AND SUM(CASE WHEN "status" = 'DOWN' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
-    `;
+type NotificationPlan = {
+    incidentId: string;
+    channel: NotificationChannel;
+    eventType: "incident_created" | "incident_resolved" | "alert_escalated";
+    message: string;
+    websiteUrl: string;
+};
 
-    const websitesUp = await prismaClient.$queryRaw<{ websiteId: string }[]>`
-    SELECT "websiteId"
-    FROM (
-        SELECT "websiteId", "status", "region",
-               ROW_NUMBER() OVER (PARTITION BY "websiteId", "region" ORDER BY "createdAt" DESC) as rn
-        FROM "WebsiteTick"
-    ) ranked
-    WHERE rn <= ${CONSECUTIVE_FAILURES_THRESHOLD}
-    GROUP BY "websiteId", "region"
-    HAVING COUNT(*) = ${CONSECUTIVE_FAILURES_THRESHOLD}
-       AND SUM(CASE WHEN "status" = 'UP' THEN 1 ELSE 0 END) = ${CONSECUTIVE_FAILURES_THRESHOLD}
-    `;
+async function deriveStatus(tx: Prisma.TransactionClient, monitorId: string) {
+    const results = await tx.monitorCheckResult.findMany({
+        where: { monitorId },
+        orderBy: { createdAt: "desc" },
+        take: SAMPLE_RESULTS,
+    });
 
-    const downWebsiteIds = [...new Set(websitesDown.map(w => w.websiteId))];
-    const upWebsiteIds = [...new Set(websitesUp.map(w => w.websiteId))]
-        .filter(id => !downWebsiteIds.includes(id));
+    if (results.length === 0) return { status: MonitorStatus.UNKNOWN, latest: undefined };
 
-    const resolvedAlerts = await prismaClient.alerts.findMany({
-        where: {
-            websiteId: { in: upWebsiteIds },
-            status: { in: ["triggered", "escalated"] },
-        },
+    const latest = results[0];
+    const minutesSinceLatest = (Date.now() - latest!.createdAt.getTime()) / (1000 * 60);
+    if (minutesSinceLatest > STALE_CHECK_MINUTES) {
+        return { status: MonitorStatus.UNKNOWN, latest };
+    }
+
+    let consecutiveDown = 0;
+    for (const r of results) {
+        if (r.status === MonitorStatus.DOWN) consecutiveDown++;
+        else break;
+    }
+
+    if (consecutiveDown >= CONSECUTIVE_FAILURES_THRESHOLD) {
+        return { status: MonitorStatus.DOWN, latest };
+    }
+
+    if (results.some(r => r.status === MonitorStatus.DOWN || r.status === MonitorStatus.DEGRADED)) {
+        return { status: MonitorStatus.DEGRADED, latest };
+    }
+
+    return { status: MonitorStatus.UP, latest };
+}
+
+function shouldNotify(lastAlertedAt: Date | null, force: boolean) {
+    if (force) return true;
+    if (!lastAlertedAt) return true;
+    const minutes = (Date.now() - lastAlertedAt.getTime()) / (1000 * 60);
+    return minutes >= ALERT_COOLDOWN_MINUTES;
+}
+
+async function processMonitor(tx: Prisma.TransactionClient, monitorId: string) {
+    const monitor = await tx.monitor.findUnique({
+        where: { id: monitorId },
         include: {
-            website: {
-                include: {
-                    websiteNotificationChannels: {
-                        include: { notificationChannel: true }
-                    }
-                }
-            }
-        }
+            monitorNotificationChannels: {
+                include: { notificationChannel: true },
+            },
+        },
     });
 
-    await prismaClient.alerts.updateMany({
-        where: { id: { in: resolvedAlerts.map(a => a.id) } },
-        data: { status: "resolved", resolvedAt: new Date() },
+    if (!monitor) return [] as NotificationPlan[];
+    if (monitor.paused) return [] as NotificationPlan[];
+
+    const { status: derivedStatus, latest } = await deriveStatus(tx, monitor.id);
+
+    const openIncident = await tx.incident.findFirst({
+        where: {
+            monitorId: monitor.id,
+            status: { in: [IncidentStatus.OPEN, IncidentStatus.ACKNOWLEDGED] },
+        },
     });
 
-    await prismaClient.incidentEvent.createMany({
-        data: resolvedAlerts.map(alert => ({
-            alertId: alert.id,
-            type: "incident_resolved",
-            message: "Website is back UP — incident resolved",
-        })),
-    });
+    const notifications: NotificationPlan[] = [];
 
-    for (const alert of resolvedAlerts) {
-        for (const wc of alert.website.websiteNotificationChannels) {
-            if (!wc.notificationChannel.active) continue;
+    // Transition logic
+    if (!openIncident && (derivedStatus === MonitorStatus.DOWN || derivedStatus === MonitorStatus.DEGRADED)) {
+        const incident = await tx.incident.create({
+            data: {
+                monitorId: monitor.id,
+                status: IncidentStatus.OPEN,
+                severity: derivedStatus === MonitorStatus.DOWN ? "critical" : "warning",
+                startedAt: new Date(),
+                lastAlertedAt: new Date(),
+            },
+        });
 
-            await sendNotification({
-                eventType: "incident_resolved",
-                websiteUrl: alert.website.url,
-                message: "Website is back UP — incident resolved",
-                channel: wc.notificationChannel
+        await tx.incidentEvent.create({
+            data: {
+                incidentId: incident.id,
+                type: "incident_created",
+                message: `Incident opened. Status: ${derivedStatus}. Target: ${monitor.target}`,
+            },
+        });
+
+        const message = derivedStatus === MonitorStatus.DOWN
+            ? `❌ ${monitor.name || monitor.target} is DOWN`
+            : `⚠️ ${monitor.name || monitor.target} is DEGRADED`;
+
+        notifications.push(...(monitor.monitorNotificationChannels.map<NotificationPlan>(({ notificationChannel }) => ({
+            incidentId: incident.id,
+            channel: notificationChannel,
+            eventType: "incident_created",
+            message,
+            websiteUrl: monitor.target,
+        }))));
+    } else if (openIncident && derivedStatus === MonitorStatus.UP) {
+        await tx.incident.update({
+            where: { id: openIncident.id },
+            data: { status: IncidentStatus.RESOLVED, resolvedAt: new Date() },
+        });
+
+        await tx.incidentEvent.create({
+            data: {
+                incidentId: openIncident.id,
+                type: "incident_resolved",
+                message: `Incident resolved. Target: ${monitor.target}`,
+            },
+        });
+
+        const message = `✅ ${monitor.name || monitor.target} is back UP`;
+
+        notifications.push(...(monitor.monitorNotificationChannels.map<NotificationPlan>(({ notificationChannel }) => ({
+            incidentId: openIncident.id,
+            channel: notificationChannel,
+            eventType: "incident_resolved",
+            message,
+            websiteUrl: monitor.target,
+        }))));
+    } else if (openIncident && (derivedStatus === MonitorStatus.DOWN || derivedStatus === MonitorStatus.DEGRADED)) {
+        // Still unhealthy – maybe send a periodic reminder
+        const force = false;
+        if (shouldNotify(openIncident.lastAlertedAt, force)) {
+            const updated = await tx.incident.update({
+                where: { id: openIncident.id },
+                data: { lastAlertedAt: new Date() },
             });
 
-            await prismaClient.alertNotification.create({
+            await tx.incidentEvent.create({
                 data: {
-                    alertId: alert.id,
-                    notificationChannelId: wc.notificationChannelId,
-                    eventType: "incident_resolved",
-                }
+                    incidentId: updated.id,
+                    type: "alert_escalated",
+                    message: `Reminder: ${monitor.name || monitor.target} still ${derivedStatus}`,
+                },
             });
+
+            const message = `⏰ ${monitor.name || monitor.target} still ${derivedStatus}`;
+            notifications.push(...(monitor.monitorNotificationChannels.map<NotificationPlan>(({ notificationChannel }) => ({
+                incidentId: updated.id,
+                channel: notificationChannel,
+                eventType: "alert_escalated",
+                message,
+                websiteUrl: monitor.target,
+            }))));
         }
     }
 
-    if (downWebsiteIds.length === 0) return;
+    return notifications;
+}
 
-    const downWebsites = await prismaClient.website.findMany({
-        where: { id: { in: downWebsiteIds } },
-        include: {
-            websiteNotificationChannels: {
-                include: { notificationChannel: true }
-            }
-        }
+async function handleAlertLogic() {
+    const monitors = await prismaClient.monitor.findMany({
+        where: { paused: false },
+        select: { id: true },
+        take: 200,
     });
 
-    for (const website of downWebsites) {
-        const existingAlert = await prismaClient.alerts.findFirst({
-            where: {
-                websiteId: website.id,
-                status: { in: ["triggered", "escalated"] }
-            }
-        });
+    const notificationsToSend: NotificationPlan[] = [];
 
-        const newCount = (existingAlert?.alertCount ?? 0) + 1;
-        const isEscalated = newCount >= 3;
+    for (const m of monitors) {
+        const planned = await prismaClient.$transaction((tx) => processMonitor(tx, m.id));
+        notificationsToSend.push(...planned);
+    }
 
-        let alert;
-
-        if (!existingAlert) {
-            alert = await prismaClient.alerts.create({
-                data: {
-                    websiteId: website.id,
-                    status: "triggered",
-                    alertCount: 1,
-                    lastAlertedAt: new Date(),
-                }
-            });
-            await prismaClient.incidentEvent.create({
-                data: {
-                    alertId: alert.id,
-                    type: "incident_created",
-                    message: "Incident detected — website is DOWN",
-                }
-            });
-        } else {
-            alert = await prismaClient.alerts.update({
-                where: { id: existingAlert.id },
-                data: {
-                    alertCount: { increment: 1 },
-                    lastAlertedAt: new Date(),
-                    escalated: isEscalated,
-                    status: isEscalated ? "escalated" : "triggered",
-                }
-            });
-
-            await prismaClient.incidentEvent.create({
-                data: {
-                    alertId: alert.id,
-                    type: isEscalated ? "alert_escalated" : "alert_sent",
-                    message: isEscalated
-                        ? "Escalated to on-call after 3 alerts"
-                        : `Alert #${newCount} — website still DOWN`,
-                }
-            });
-        }
-
-        for (const wc of website.websiteNotificationChannels) {
-            if (!wc.notificationChannel.active) continue;
-
-            const eventType = !existingAlert
-                ? "incident_created"
-                : isEscalated ? "alert_escalated" : "alert_sent";
-
+    for (const notification of notificationsToSend) {
+        try {
             await sendNotification({
-                eventType,
-                websiteUrl: website.url,
-                message: !existingAlert
-                    ? "Incident detected — website is DOWN"
-                    : isEscalated
-                        ? "Escalated to on-call after 3 alerts"
-                        : `Alert #${newCount} — website still DOWN`,
-                channel: wc.notificationChannel
+                websiteUrl: notification.websiteUrl,
+                eventType: notification.eventType,
+                message: notification.message,
+                channel: notification.channel,
             });
-
-            await prismaClient.alertNotification.create({
+            await prismaClient.alertDelivery.create({
                 data: {
-                    alertId: alert.id,
-                    notificationChannelId: wc.notificationChannelId,
-                    eventType,
-                }
+                    incidentId: notification.incidentId,
+                    notificationChannelId: notification.channel.id,
+                    eventType: notification.eventType,
+                    status: "sent",
+                },
             });
+        } catch (err: any) {
+            console.error("Failed to send notification", err);
         }
     }
 }

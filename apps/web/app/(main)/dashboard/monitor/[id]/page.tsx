@@ -245,7 +245,7 @@ export default function MonitorDetailsPage({ params }: { params: Promise<{ id: s
                 <LucidePauseCircle className="h-4 w-4" />
                 <span>Pause this monitor</span>
               </button>
-              <Link href={`#`} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors opacity-50 cursor-not-allowed">
+              <Link href={`/dashboard/monitor/${id}/configure`} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 <LucideSettings className="h-4 w-4" />
                 <span>Configure</span>
               </Link>

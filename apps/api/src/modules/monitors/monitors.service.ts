@@ -55,11 +55,40 @@ export const getMonitorForUser = async (userId: string, monitorId: string) => {
     where: { id: monitorId, userId },
     include: {
       statusPage: true,
+      monitorNotificationChannels: {
+        include: { notificationChannel: true },
+      },
       checkResults: {
         orderBy: { createdAt: "desc" },
         take: 50,
       },
     },
+  });
+};
+
+export const updateMonitorChannels = async (userId: string, monitorId: string, channelIds: string[]) => {
+  // 1. Verify ownership
+  const monitor = await prismaClient.monitor.findFirst({ where: { id: monitorId, userId } });
+  if (!monitor) return null;
+
+  // 2. Transaction to sync channels
+  return prismaClient.$transaction(async (tx) => {
+    // Delete existing
+    await tx.monitorNotificationChannel.deleteMany({
+      where: { monitorId }
+    });
+
+    // Create new
+    if (channelIds.length > 0) {
+      await tx.monitorNotificationChannel.createMany({
+        data: channelIds.map(channelId => ({
+          monitorId,
+          notificationChannelId: channelId
+        }))
+      });
+    }
+
+    return { success: true };
   });
 };
 

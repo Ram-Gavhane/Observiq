@@ -1,6 +1,6 @@
 import { Router } from "express";
 import authMiddleware from "../../common/auth/middleware";
-import { addMonitor, deleteMonitor, getMonitorChecks, getMonitorDetails, getMonitorInsights, getMonitors } from "./monitors.controller";
+import { addMonitor, deleteMonitor, getMonitorChecks, getMonitorDetails, getMonitorInsights, getMonitors, updateMonitorChannels } from "./monitors.controller";
 
 const router = Router();
 
@@ -10,5 +10,6 @@ router.get("/monitor/:id", authMiddleware, getMonitorDetails);
 router.get("/monitor/:id/insights", authMiddleware, getMonitorInsights);
 router.get("/monitor/:id/checks", authMiddleware, getMonitorChecks);
 router.delete("/monitor/:id", authMiddleware, deleteMonitor);
+router.put("/monitor/:id/channels", authMiddleware, updateMonitorChannels);
 
 export default router;

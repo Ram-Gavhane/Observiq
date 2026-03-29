@@ -7,6 +7,7 @@ import {
   getMonitorsByUser,
   getMonitorInsights as getMonitorInsightsService,
   getMonitorChecks as getMonitorChecksService,
+  updateMonitorChannels as updateMonitorChannelsService,
 } from "./monitors.service";
 
 const ALLOWED_TYPES = new Set(Object.values(MonitorType));
@@ -118,5 +119,25 @@ export const getMonitorChecks = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Failed to fetch monitor checks", error);
     res.status(500).json({ message: "Failed to fetch monitor checks" });
+  }
+};
+export const updateMonitorChannels = async (req: Request, res: Response) => {
+  const userId = req.userId;
+  const monitorId = req.params.id as string;
+  const { channelIds } = req.body;
+
+  if (!Array.isArray(channelIds)) {
+    return res.status(400).json({ message: "channelIds must be an array" });
+  }
+
+  try {
+    const result = await updateMonitorChannelsService(userId, monitorId, channelIds);
+    if (!result) {
+      return res.status(404).json({ message: "Monitor not found or unauthorized" });
+    }
+    res.json({ message: "Monitor notification channels updated successfully" });
+  } catch (error) {
+    console.error("Failed to update monitor channels", error);
+    res.status(500).json({ message: "Failed to update monitor channels" });
   }
 };

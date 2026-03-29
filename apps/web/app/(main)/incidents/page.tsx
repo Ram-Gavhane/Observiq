@@ -24,7 +24,7 @@ interface Incident {
   status: string;
   alertCount: number;
   escalated: boolean;
-  triggeredAt: string;
+  startedAt: string;
   resolvedAt: string | null;
   lastAlertedAt: string | null;
   monitor?: {
@@ -231,11 +231,11 @@ export default function IncidentsPage() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-0.5 whitespace-nowrap">
                             <span className="text-muted-foreground">
-                              {new Date(incident.triggeredAt).toLocaleDateString()}
+                              {new Date(incident.startedAt).toLocaleDateString()}
                             </span>
                             <span className="text-xs text-muted-foreground/70 flex items-center gap-1">
                               <LucideClock className="h-3 w-3" />
-                              {new Date(incident.triggeredAt).toLocaleTimeString()}
+                              {new Date(incident.startedAt).toLocaleTimeString()}
                             </span>
                           </div>
                         </td>
