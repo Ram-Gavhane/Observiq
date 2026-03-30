@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../../common/config";
-import { createUser, findUserByEmail, getUserProfile } from "./auth.service";
+import { createUser, findUserByEmail, getUserProfile, updateUserProfile } from "./auth.service";
 
 export const signup = async (req: Request, res: Response) => {
   const { email, password, firstName, lastName } = req.body;
@@ -62,5 +62,36 @@ export const getMe = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.log(error);
     res.status(500).json({ error: "Failed to fetch profile" });
+  }
+};
+
+export const updateMe = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { firstName, lastName } = req.body;
+
+    if (!firstName || !lastName) {
+      return res.status(400).json({ message: "First name and last name are required" });
+    }
+
+    const user = await updateUserProfile(userId, firstName, lastName);
+
+    res.json({
+      message: "Profile updated successfully",
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      },
+    });
+  } catch (error: any) {
+    console.log(error);
+    res.status(500).json({ error: "Failed to update profile" });
   }
 };

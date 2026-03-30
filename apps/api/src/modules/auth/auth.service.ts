@@ -12,6 +12,13 @@ export const createUser = async (email: string, password: string, firstName: str
   });
 };
 
+export const updateUserProfile = async (id: string, firstName: string, lastName: string) => {
+  return prismaClient.user.update({
+    where: { id },
+    data: { firstName, lastName },
+  });
+};
+
 export const getUserProfile = async (id: string) => {
   return prismaClient.user.findUnique({
     where: { id },

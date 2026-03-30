@@ -93,7 +93,7 @@ export function AppSidebar() {
               </SidebarMenuItem>
                <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Settings">
-                  <Link href="/settings/notifications">
+                  <Link href="/settings/account">
                   <LucideSettings className="h-4 w-4" />
                     <span>Settings</span>
                   </Link>
