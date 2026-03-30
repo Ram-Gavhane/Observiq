@@ -16,6 +16,9 @@ datasource db {
 model User {
   id                   String                @id @default(uuid())
   email                String                @unique
+  firstName            String
+  lastName             String
+  role                 String                @default("owner")
   password             String
   monitors             Monitor[]
   notificationChannels NotificationChannel[]

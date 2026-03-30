@@ -4,7 +4,11 @@ import { JWT_SECRET } from "../../common/config";
 import { createUser, findUserByEmail, getUserProfile } from "./auth.service";
 
 export const signup = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password, firstName, lastName } = req.body;
+
+  if (!firstName || !lastName) {
+    return res.status(400).json({ message: "First name and last name are required" });
+  }
 
   const existingUser = await findUserByEmail(email);
   if (existingUser) {
@@ -12,10 +16,13 @@ export const signup = async (req: Request, res: Response) => {
   }
 
   try {
-    const user = await createUser(email, password);
+    const user = await createUser(email, password, firstName, lastName);
     res.json({
       message: "User created successfully",
       userId: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
     });
   } catch (error: any) {
     console.log(error);

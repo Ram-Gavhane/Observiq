@@ -10,6 +10,8 @@ import { toast } from "sonner";
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -18,7 +20,12 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/signup", { email, password });
+      const response = await axios.post(process.env.NEXT_PUBLIC_API_URL + "/signup", {
+        email,
+        password,
+        firstName,
+        lastName,
+      });
 
       if (!response) {
         throw new Error("Failed to sign up");
@@ -46,6 +53,36 @@ export default function SignupPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none" htmlFor="firstName">
+                First name
+              </label>
+              <input
+                id="firstName"
+                type="text"
+                placeholder="Jane"
+                required
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none" htmlFor="lastName">
+                Last name
+              </label>
+              <input
+                id="lastName"
+                type="text"
+                placeholder="Doe"
+                required
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+          </div>
           <div className="space-y-2">
             <label className="text-sm font-medium leading-none" htmlFor="email">
               Email address
