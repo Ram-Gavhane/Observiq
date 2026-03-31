@@ -120,7 +120,7 @@ export default function ProfilePage() {
       label: "Security",
       desc: "Password and two-factor authentication",
       icon: LucideShield,
-      href: "/settings/account",
+      href: "/settings/security",
     },
     {
       label: "Notification Preferences",

@@ -20,6 +20,7 @@ model User {
   lastName             String
   role                 String                @default("owner")
   password             String
+  sessions             Session[]
   monitors             Monitor[]
   notificationChannels NotificationChannel[]
 }
@@ -192,4 +193,17 @@ model IncidentEvent {
   incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
 
   @@index([incidentId])
+}
+
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  expiresAt  DateTime?
+
+  @@index([userId, lastSeenAt])
 }

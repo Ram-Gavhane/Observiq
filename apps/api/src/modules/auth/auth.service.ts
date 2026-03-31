@@ -12,6 +12,19 @@ export const createUser = async (email: string, password: string, firstName: str
   });
 };
 
+export const getUserById = async (id: string) => {
+  return prismaClient.user.findUnique({
+    where: { id },
+  });
+};
+
+export const updateUserPassword = async (id: string, password: string) => {
+  return prismaClient.user.update({
+    where: { id },
+    data: { password },
+  });
+};
+
 export const updateUserProfile = async (id: string, firstName: string, lastName: string) => {
   return prismaClient.user.update({
     where: { id },
@@ -35,5 +48,28 @@ export const getUserProfile = async (id: string) => {
         },
       },
     },
+  });
+};
+
+export const createSession = async (
+  userId: string,
+  userAgent?: string | null,
+  ipAddress?: string | null,
+  expiresAt?: Date
+) => {
+  return prismaClient.session.create({
+    data: {
+      userId,
+      userAgent: userAgent || null,
+      ipAddress: ipAddress || null,
+      expiresAt: expiresAt || null,
+    },
+  });
+};
+
+export const listSessionsForUser = async (userId: string) => {
+  return prismaClient.session.findMany({
+    where: { userId },
+    orderBy: { lastSeenAt: "desc" },
   });
 };
