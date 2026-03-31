@@ -9,6 +9,7 @@ import {
   getMonitorChecks as getMonitorChecksService,
   updateMonitorChannels as updateMonitorChannelsService,
 } from "./monitors.service";
+import { xAddBulk } from "@repo/redisstreams";
 
 const ALLOWED_TYPES = new Set(Object.values(MonitorType));
 const ALLOWED_REGIONS = new Set(Object.values(REGION));
@@ -48,6 +49,13 @@ export const addMonitor = async (req: Request, res: Response) => {
       intervalSec,
       config,
     });
+    await xAddBulk([{
+      id: monitor.id,
+      type: monitor.type,
+      target: monitor.target,
+      regions: monitor.regions,
+      config: monitor.config as Record<string, unknown>,
+    }]);
 
     res.json({ message: "Monitor created successfully", monitor });
   } catch (error) {
