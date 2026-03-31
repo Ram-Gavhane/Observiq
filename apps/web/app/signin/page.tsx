@@ -30,9 +30,12 @@ export default function SigninPage() {
         throw new Error(data.message || "Failed to sign in");
       }
 
-      // Store JWT in local storage
+      // Store JWT and current session id in local storage
       if (data.token) {
         localStorage.setItem("token", data.token);
+      }
+      if (data.sessionId) {
+        localStorage.setItem("sessionId", data.sessionId);
       }
 
       router.push("/dashboard");

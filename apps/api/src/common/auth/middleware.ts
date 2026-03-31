@@ -12,8 +12,9 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; sessionId?: string };
     req.userId = decoded.id;
+    req.sessionId = decoded.sessionId;
     next();
   } catch (error) {
     return res.status(401).json({ message: "Unauthorized" });

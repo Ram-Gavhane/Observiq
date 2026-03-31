@@ -21,9 +21,28 @@ export function AppSidebar() {
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    router.push("/signin");
+  const handleLogout = async () => {
+    const token = localStorage.getItem("token");
+    const sessionId = localStorage.getItem("sessionId");
+
+    try {
+      if (token) {
+        await fetch(process.env.NEXT_PUBLIC_API_URL + "/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ sessionId: sessionId || undefined }),
+        });
+      }
+    } catch (error) {
+      // ignore best-effort failure
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("sessionId");
+      router.push("/signin");
+    }
   };
 
   return (

@@ -18,6 +18,7 @@ import {
 import axios from "axios";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { body } from "framer-motion/client";
 
 interface UserProfile {
   id: string;
@@ -74,9 +75,26 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    router.push("/signin");
+  const handleLogout = async () => {
+    const token = localStorage.getItem("token");
+    const sessionId = localStorage.getItem("sessionId");
+
+    try {
+      if (token) {
+        await axios.post(
+          process.env.NEXT_PUBLIC_API_URL + "/logout",
+          { sessionId: sessionId || undefined },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+    } catch (err) {
+      // Best-effort logout; still clear local state
+      toast.error("Could not notify server about logout");
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("sessionId");
+      router.push("/signin");
+    }
   };
 
   if (loading) {

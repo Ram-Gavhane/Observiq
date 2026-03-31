@@ -73,3 +73,15 @@ export const listSessionsForUser = async (userId: string) => {
     orderBy: { lastSeenAt: "desc" },
   });
 };
+
+export const getSessionById = async (sessionId: string) => {
+  return prismaClient.session.findUnique({
+    where: { id: sessionId },
+  });
+};
+
+export const deleteSession = async (sessionId: string) => {
+  return prismaClient.session.delete({
+    where: { id: sessionId },
+  });
+};

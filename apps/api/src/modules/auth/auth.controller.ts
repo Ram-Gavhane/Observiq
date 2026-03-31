@@ -4,7 +4,9 @@ import { JWT_SECRET } from "../../common/config";
 import {
   createSession,
   createUser,
+  deleteSession,
   findUserByEmail,
+  getSessionById,
   getUserById,
   getUserProfile,
   listSessionsForUser,
@@ -50,16 +52,18 @@ export const signin = async (req: Request, res: Response) => {
     return res.status(401).json({ message: "Invalid password" });
   }
 
-  const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1h" });
   const userAgent = req.headers["user-agent"] as string | undefined;
   const ipAddress =
     (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ||
     (req.ip === "::1" ? "127.0.0.1" : req.ip);
 
-  await createSession(user.id, userAgent, ipAddress, new Date(Date.now() + 60 * 60 * 1000));
+  const session = await createSession(user.id, userAgent, ipAddress, new Date(Date.now() + 60 * 60 * 1000));
+
+  const token = jwt.sign({ id: user.id, sessionId: session.id }, JWT_SECRET, { expiresIn: "1h" });
   res.json({
     message: "User signed in successfully",
     token,
+    sessionId: session.id,
   });
 };
 
@@ -162,3 +166,33 @@ export const getSessions = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch sessions" });
   }
 };
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const sessionId = (req.body?.sessionId as string | undefined) || req.sessionId;
+    if (!sessionId) {
+      return res.status(400).json({ message: "Session ID is required" });
+    }
+
+    const session = await getSessionById(sessionId);
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    if (session.userId !== userId) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    await deleteSession(sessionId);
+
+    res.json({ message: "Session deleted successfully" });
+  } catch (error: any) {
+    console.log(error);
+    res.status(500).json({ error: "Failed to delete session" });
+  }
+};  
