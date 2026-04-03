@@ -19,7 +19,6 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
-// Client-side only date formatter to prevent hydration mismatch
 function FormattedDate({ date, formatStr = "PP" }: { date: string | Date | null | undefined, formatStr?: string }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -119,15 +118,15 @@ export default function IncidentsPage() {
   const getEventIcon = (type: string) => {
     switch (type) {
       case "incident_created":
-        return <LucideAlertOctagon className="h-4 w-4 text-rose-500" />;
+        return <LucideAlertOctagon className="h-3.5 w-3.5 text-rose-500" />;
       case "incident_resolved":
-        return <LucideShieldCheck className="h-4 w-4 text-emerald-500" />;
+        return <LucideShieldCheck className="h-3.5 w-3.5 text-emerald-500" />;
       case "alert_escalated":
-        return <LucideShieldAlert className="h-4 w-4 text-orange-500" />;
+        return <LucideShieldAlert className="h-3.5 w-3.5 text-orange-500" />;
       case "alert_sent":
-        return <LucideBellRing className="h-4 w-4 text-blue-500" />;
+        return <LucideBellRing className="h-3.5 w-3.5 text-blue-500" />;
       default:
-        return <LucideClock className="h-4 w-4 text-muted-foreground" />;
+        return <LucideClock className="h-3.5 w-3.5 text-muted-foreground" />;
     }
   };
 
@@ -143,9 +142,9 @@ export default function IncidentsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center">
-        <LucideLoader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-sm text-muted-foreground">Loading incidents...</p>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center">
+        <LucideLoader2 className="h-6 w-6 animate-spin text-primary" />
+        <p className="mt-3 text-xs text-muted-foreground">Loading incidents...</p>
       </div>
     );
   }
@@ -154,173 +153,197 @@ export default function IncidentsPage() {
     const status = incident.status.toLowerCase();
     if (status === "resolved") {
       return (
-        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20">
           Resolved
         </span>
       );
     }
     if (incident.escalated) {
       return (
-        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold bg-rose-500/10 text-rose-500 ring-1 ring-rose-500/20">
           Critical
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold bg-orange-500/10 text-orange-500 ring-1 ring-orange-500/20">
         Major
       </span>
     );
   };
 
+  const activeIncidents = incidents.filter(i => i.status.toLowerCase() !== "resolved");
+  const resolvedIncidents = incidents.filter(i => i.status.toLowerCase() === "resolved");
+
   return (
-    <main className="mx-auto max-w-6xl px-6 py-6">
-      <div className="flex flex-col gap-8">
+    <main className="mx-auto max-w-[1200px]">
+      <div className="flex flex-col gap-6">
         {/* Header */}
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between items-start">
+        <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Incidents</h1>
-            <p className="text-muted-foreground mt-1">Track and manage service disruptions.</p>
+            <h1 className="text-2xl font-bold tracking-tight">Incidents</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Track and manage service disruptions.</p>
           </div>
+          {incidents.length > 0 && (
+            <div className="flex items-center gap-3 text-xs">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-orange-500" />
+                {activeIncidents.length} active
+              </span>
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                {resolvedIncidents.length} resolved
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Incidents Table/Grid */}
-        <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-sm">
+        {/* Incidents Table */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
           {incidents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="mb-4 rounded-full bg-zinc-100 p-4 dark:bg-zinc-800">
-                <LucideCheckCircle2 className="h-8 w-8 text-emerald-500 opacity-80" />
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10">
+                <LucideCheckCircle2 className="h-6 w-6 text-emerald-500" />
               </div>
-              <h3 className="text-lg font-bold">All systems operational</h3>
-              <p className="text-muted-foreground mt-1">No incidents have been recorded.</p>
+              <h3 className="text-base font-semibold mb-1">All systems operational</h3>
+              <p className="text-sm text-muted-foreground">No incidents have been recorded.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-[13px]">
                 <thead>
-                  <tr className="border-b border-border bg-zinc-50/50 dark:bg-zinc-900/50">
-                    <th className="px-6 py-4 font-bold">Incident</th>
-                    <th className="px-6 py-4 font-bold">Status</th>
-                    <th className="px-6 py-4 font-bold">Severity</th>
-                    <th className="px-6 py-4 font-bold">Component</th>
-                    <th className="px-6 py-4 font-bold">Started</th>
-                    <th className="px-6 py-4 font-bold"></th>
+                  <tr className="border-b border-border">
+                    <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Incident</th>
+                    <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                    <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Severity</th>
+                    <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Component</th>
+                    <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Started</th>
+                    <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground w-10"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
-                  {incidents.map((incident) => (
-                    <Fragment key={incident.id}>
-                      <tr
-                        key={incident.id}
-                        onClick={() => handleRowClick(incident)}
-                        className={cn(
-                          "group cursor-pointer transition-all hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10",
-                          incident.status.toLowerCase() === 'resolved' && "opacity-75 grayscale-[0.3]"
-                        )}
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                              {incident.status.toLowerCase() === 'resolved' ? (
-                                <LucideShieldCheck className="h-4 w-4 text-emerald-600" />
-                              ) : (
-                                <LucideAlertOctagon className="h-4 w-4 text-rose-500" />
-                              )}
+                <tbody>
+                  {incidents.map((incident) => {
+                    const isResolved = incident.status.toLowerCase() === 'resolved';
+                    const borderColor = isResolved 
+                      ? "border-l-emerald-500/40" 
+                      : incident.escalated 
+                        ? "border-l-rose-500" 
+                        : "border-l-orange-500";
+
+                    return (
+                      <Fragment key={incident.id}>
+                        <tr
+                          onClick={() => handleRowClick(incident)}
+                          className={cn(
+                            "group cursor-pointer transition-colors hover:bg-accent/20 border-b border-border/50 border-l-2",
+                            borderColor,
+                            isResolved && "opacity-60"
+                          )}
+                        >
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                                isResolved ? "bg-emerald-500/10" : "bg-rose-500/10"
+                              )}>
+                                {isResolved ? (
+                                  <LucideShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                                ) : (
+                                  <LucideAlertOctagon className="h-3.5 w-3.5 text-rose-500" />
+                                )}
+                              </div>
+                              <span className="font-medium text-sm">
+                                Incident on {incident.monitor?.name || 'Unknown'}
+                              </span>
                             </div>
-                            <span className="font-medium whitespace-nowrap">
-                              Incident on {incident.monitor?.name || 'Unknown System'}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-1.5 capitalize text-xs font-medium text-muted-foreground">
+                              {isResolved && <LucideShieldCheck className="h-3 w-3 text-emerald-500" />}
+                              {incident.status.toLowerCase() === 'triggered' && <LucideAlertTriangle className="h-3 w-3 text-orange-500" />}
+                              {incident.status.toLowerCase() === 'escalated' && <LucideAlertTriangle className="h-3 w-3 text-rose-500" />}
+                              {incident.status.toLowerCase()}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {getSeverityBadge(incident)}
+                          </td>
+                          <td className="px-5 py-3.5 hidden md:table-cell">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                              <LucideGlobe className="h-3 w-3 opacity-40" />
+                              {incident.monitor?.name || incident.monitorId}
                             </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 capitalize">
-                            {incident.status.toLowerCase() === 'resolved' && <LucideShieldCheck className="h-4 w-4 text-emerald-600" />}
-                            {incident.status.toLowerCase() === 'triggered' && <LucideAlertTriangle className="h-4 w-4 text-orange-500" />}
-                            {incident.status.toLowerCase() === 'escalated' && <LucideAlertTriangle className="h-4 w-4 text-rose-500" />}
-                            <span className={cn(
-                              "font-medium",
-                              incident.status.toLowerCase() === 'resolved' ? "text-emerald-700/70" : "text-muted-foreground"
-                            )}>{incident.status.toLowerCase()}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {getSeverityBadge(incident)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-muted-foreground flex items-center gap-2">
-                            <LucideGlobe className="h-3 w-3" />
-                            {incident.monitor?.name || incident.monitorId}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-0.5 whitespace-nowrap">
-                            <span className="text-muted-foreground font-medium">
-                              <FormattedDate date={incident.startedAt || incident.createdAt} formatStr="MMM d, yyyy" />
-                            </span>
-                            <span className="text-xs text-muted-foreground/70 flex items-center gap-1">
-                              <LucideClock className="h-3 w-3" />
-                              <FormattedDate date={incident.startedAt || incident.createdAt} formatStr="HH:mm:ss" />
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <LucideChevronDown
-                            className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
-                              expandedId === incident.id ? "rotate-180" : ""
-                            }`}
-                          />
-                        </td>
-                      </tr>
-
-                      {/* Timeline Panel */}
-                      {expandedId === incident.id && (
-                        <tr key={`${incident.id}-timeline`}>
-                          <td colSpan={6} className="bg-zinc-50/80 dark:bg-zinc-900/20 px-6 py-6">
-                            {timelineLoading && !timelineCache[incident.id] ? (
-                              <div className="flex items-center justify-center py-8">
-                                <LucideLoader2 className="h-5 w-5 animate-spin text-primary" />
-                                <span className="ml-2 text-sm text-muted-foreground">Loading timeline...</span>
-                              </div>
-                            ) : timelineCache[incident.id]?.length === 0 ? (
-                              <div className="flex items-center justify-center py-8">
-                                <p className="text-sm text-muted-foreground">No timeline events recorded.</p>
-                              </div>
-                            ) : (
-                              <div className="relative ml-4">
-                                {/* Vertical line */}
-                                <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-border" />
-
-                                <div className="flex flex-col gap-0">
-                                  {timelineCache[incident.id]?.map((event, idx) => (
-                                    <div key={event.id} className="relative flex items-start gap-4 pb-6 last:pb-0">
-                                      {/* Dot */}
-                                      <div className={`relative z-10 mt-1 h-4 w-4 rounded-full border-2 border-background ${getEventDotColor(event.type)} flex items-center justify-center shrink-0`}>
-                                      </div>
-
-                                      {/* Content */}
-                                      <div className="flex flex-col gap-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                          {getEventIcon(event.type)}
-                                          <span className="text-sm font-semibold capitalize">
-                                            {event.type.replace(/_/g, " ")}
-                                          </span>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">{event.message}</p>
-                                        <span className="text-xs text-muted-foreground/60 flex items-center gap-1 mt-0.5">
-                                          <LucideClock className="h-3 w-3" />
-                                          <FormattedDate date={event.createdAt} formatStr="PPpp" />
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                          </td>
+                          <td className="px-5 py-3.5 hidden sm:table-cell">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-xs font-medium text-muted-foreground">
+                                <FormattedDate date={incident.startedAt || incident.createdAt} formatStr="MMM d, yyyy" />
+                              </span>
+                              <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
+                                <LucideClock className="h-2.5 w-2.5" />
+                                <FormattedDate date={incident.startedAt || incident.createdAt} formatStr="HH:mm:ss" />
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <LucideChevronDown
+                              className={cn(
+                                "h-3.5 w-3.5 text-muted-foreground/40 transition-transform duration-200",
+                                expandedId === incident.id && "rotate-180"
+                              )}
+                            />
                           </td>
                         </tr>
-                      )}
-                    </Fragment>
-                  ))}
+
+                        {/* Timeline Panel */}
+                        {expandedId === incident.id && (
+                          <tr key={`${incident.id}-timeline`}>
+                            <td colSpan={6} className="bg-accent/10 px-6 py-5 border-b border-border/50">
+                              {timelineLoading && !timelineCache[incident.id] ? (
+                                <div className="flex items-center justify-center py-6">
+                                  <LucideLoader2 className="h-4 w-4 animate-spin text-primary" />
+                                  <span className="ml-2 text-xs text-muted-foreground">Loading timeline...</span>
+                                </div>
+                              ) : timelineCache[incident.id]?.length === 0 ? (
+                                <div className="flex items-center justify-center py-6">
+                                  <p className="text-xs text-muted-foreground">No timeline events recorded.</p>
+                                </div>
+                              ) : (
+                                <div className="relative ml-4">
+                                  <div className="absolute left-[5px] top-2 bottom-2 w-px bg-border" />
+
+                                  <div className="flex flex-col gap-0">
+                                    {timelineCache[incident.id]?.map((event) => (
+                                      <div key={event.id} className="relative flex items-start gap-4 pb-5 last:pb-0">
+                                        <div className={cn(
+                                          "relative z-10 mt-0.5 h-3 w-3 rounded-full border-2 border-background shrink-0",
+                                          getEventDotColor(event.type)
+                                        )} />
+
+                                        <div className="flex flex-col gap-0.5 min-w-0">
+                                          <div className="flex items-center gap-2">
+                                            {getEventIcon(event.type)}
+                                            <span className="text-xs font-semibold capitalize">
+                                              {event.type.replace(/_/g, " ")}
+                                            </span>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground">{event.message}</p>
+                                          <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1 mt-0.5">
+                                            <LucideClock className="h-2.5 w-2.5" />
+                                            <FormattedDate date={event.createdAt} formatStr="PPpp" />
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

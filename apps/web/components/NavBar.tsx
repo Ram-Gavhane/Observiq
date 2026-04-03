@@ -1,14 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { LucideLogOut, UserCircle, User } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { LucideLogOut, User, LucideChevronRight, LucideRadar } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
+
+const pageNames: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/statuspages": "Status Pages",
+  "/incidents": "Incidents",
+  "/on-call-schedule": "On-Call Schedule",
+  "/settings": "Settings",
+  "/settings/account": "Account",
+  "/settings/security": "Security",
+  "/settings/notifications": "Alerts",
+  "/settings/teams": "Teams",
+  "/profile": "Profile",
+};
+
+function getBreadcrumbs(pathname: string) {
+  // Handle monitor detail pages
+  if (pathname.startsWith("/dashboard/monitor/")) {
+    return [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Monitor Details", href: pathname },
+    ];
+  }
+  // Handle settings sub-pages
+  if (pathname.startsWith("/settings/")) {
+    const settingsPage = pageNames[pathname] || pathname.split("/").pop() || "";
+    return [
+      { label: "Settings", href: "/settings" },
+      { label: settingsPage, href: pathname },
+    ];
+  }
+  // Default: single page
+  const label = pageNames[pathname] || "Dashboard";
+  return [{ label, href: pathname }];
+}
 
 export function NavBar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const breadcrumbs = getBreadcrumbs(pathname);
 
   const handleLogout = async () => {
     const token = localStorage.getItem("token");
@@ -46,39 +83,62 @@ export function NavBar() {
   }, []);
 
   return (
-    <nav className="border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-50">
-      <div className="mx-auto flex h-16 w-full items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-            <span>Observiq</span>
-          </Link>
+    <nav className="h-[57px] flex items-center border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+      <div className="mx-auto flex w-full items-center justify-between px-6">
+        {/* Left: Breadcrumb Navigation */}
+        <div className="flex items-center gap-1.5 text-sm min-w-0">
+          {breadcrumbs.map((crumb, i) => (
+            <div key={crumb.href} className="flex items-center gap-1.5 min-w-0">
+              {i > 0 && (
+                <LucideChevronRight className="h-3 w-3 text-muted-foreground/40 shrink-0" />
+              )}
+              {i === breadcrumbs.length - 1 ? (
+                <span className="font-semibold text-foreground truncate">
+                  {crumb.label}
+                </span>
+              ) : (
+                <Link
+                  href={crumb.href}
+                  className="text-muted-foreground hover:text-foreground transition-colors truncate"
+                >
+                  {crumb.label}
+                </Link>
+              )}
+            </div>
+          ))}
         </div>
+
+        {/* Right: User Menu */}
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 text-sm font-medium opacity-60 hover:opacity-100 transition-opacity focus:outline-none"
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold transition-all hover:bg-primary/20",
+              isDropdownOpen && "ring-2 ring-primary/30"
+            )}
           >
-            <UserCircle className="h-6 w-6" />
+            <User className="h-4 w-4" />
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-xl bg-background border border-border py-1 z-50">
+            <div className="absolute right-0 mt-2 w-48 rounded-xl shadow-xl bg-popover border border-border py-1.5 z-50 animate-in fade-in-0 zoom-in-95 duration-150">
               <Link
                 href="/profile"
-                className="flex items-center px-4 py-2 text-sm opacity-80 hover:opacity-100 hover:bg-muted transition-colors"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
                 onClick={() => setIsDropdownOpen(false)}
               >
-                <User className="mr-2 h-4 w-4" />
+                <User className="h-3.5 w-3.5" />
                 Profile
               </Link>
+              <div className="mx-3 my-1 border-t border-border/50" />
               <button
                 onClick={() => {
                   setIsDropdownOpen(false);
                   handleLogout();
                 }}
-                className="flex w-full items-center px-4 py-2 text-sm text-red-500 opacity-80 hover:opacity-100 hover:bg-muted transition-colors text-left"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-destructive/80 hover:text-destructive hover:bg-destructive/5 transition-colors text-left"
               >
-                <LucideLogOut className="mr-2 h-4 w-4" />
+                <LucideLogOut className="h-3.5 w-3.5" />
                 Logout
               </button>
             </div>

@@ -14,6 +14,7 @@ import {
 import axios from "axios";
 import { toast } from "sonner";
 import { AddMonitorModal } from "@/components/AddMonitorModal";
+import { cn } from "@/lib/utils";
 
 interface Monitor {
   id: string;
@@ -89,106 +90,104 @@ export default function StatusPages() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center min-h-[50vh]">
-        <LucideLoader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <LucideLoader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <>
-      <main className="mx-auto max-w-6xl px-6 py-6 w-full">
-        <div className="flex flex-col gap-8">
-          {/* Header */}
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-extrabold tracking-tight">Status Pages</h1>
-              <p className="text-muted-foreground mt-1">Select a monitor to view your public status page.</p>
-            </div>
-            <AddMonitorModal onSuccess={fetchMonitors} />
+    <main className="mx-auto max-w-[1200px]">
+      <div className="flex flex-col gap-6">
+        {/* Header */}
+        <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Status Pages</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Create and manage public status pages for your monitors.</p>
           </div>
+          <AddMonitorModal onSuccess={fetchMonitors} />
+        </div>
 
-          {/* Grid */}
-          <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-sm">
-            {monitors.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="mb-4 rounded-full bg-zinc-100 p-4 dark:bg-zinc-800">
-                  <LucidePresentation className="h-8 w-8 text-muted-foreground opacity-20" />
-                </div>
-                <h3 className="text-lg font-bold">No monitors added yet</h3>
-                <p className="text-muted-foreground mt-1">Add your first monitor above to get a status page.</p>
+        {/* Table */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          {monitors.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                <LucidePresentation className="h-6 w-6 text-muted-foreground/40" />
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-zinc-50/50 dark:bg-zinc-900/50">
-                      <th className="px-6 py-4 font-bold">Monitor</th>
-                      <th className="px-6 py-4 font-bold text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {monitors.map((monitor) => (
-                      <tr key={monitor.id} className="group transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                              <LucideGlobe className="h-4 w-4 opacity-40" />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{monitor.name}</span>
-                              <span className="text-xs text-muted-foreground">{monitor.target}</span>
-                            </div>
+              <h3 className="text-base font-semibold mb-1">No monitors yet</h3>
+              <p className="text-sm text-muted-foreground">Add your first monitor to get a public status page.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[13px]">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Monitor</th>
+                    <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monitors.map((monitor) => (
+                    <tr key={monitor.id} className="group transition-colors hover:bg-accent/20 border-b border-border/50 last:border-0">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/60">
+                            <LucideGlobe className="h-3.5 w-3.5 text-muted-foreground/60" />
                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {monitor.statusPage ? (
-                            <div className="flex items-center gap-2 justify-end">
-                              <Link
-                                href={`/status/${monitor.id}`}
-                                target="_blank"
-                                className="inline-flex h-8 items-center gap-2 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary hover:bg-primary/20 transition-all"
-                              >
-                                <LucidePresentation className="h-3 w-3" />
-                                View Status Page
-                                <LucideExternalLink className="h-3 w-3 opacity-50" />
-                              </Link>
-                              <button
-                                onClick={() => handleDeleteStatusPage(monitor.id)}
-                                disabled={deletingId === monitor.id}
-                                className="inline-flex h-8 items-center gap-2 rounded-full border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 px-3 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 transition-all disabled:opacity-50"
-                              >
-                                {deletingId === monitor.id ? (
-                                  <LucideLoader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <LucideTrash2 className="h-3 w-3" />
-                                )}
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => handleCreateStatusPage(monitor.id)}
-                              disabled={requestingId === monitor.id}
-                              className="inline-flex h-8 items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all disabled:opacity-50"
+                          <div className="min-w-0">
+                            <span className="font-semibold text-sm block truncate">{monitor.name}</span>
+                            <span className="text-[11px] text-muted-foreground/60 block truncate">{monitor.target}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        {monitor.statusPage ? (
+                          <div className="flex items-center gap-2 justify-end">
+                            <Link
+                              href={`/status/${monitor.id}`}
+                              target="_blank"
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary/10 px-3 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors"
                             >
-                              {requestingId === monitor.id ? (
+                              <LucidePresentation className="h-3 w-3" />
+                              View
+                              <LucideExternalLink className="h-2.5 w-2.5 opacity-50" />
+                            </Link>
+                            <button
+                              onClick={() => handleDeleteStatusPage(monitor.id)}
+                              disabled={deletingId === monitor.id}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-destructive/20 bg-destructive/5 px-2.5 text-xs font-medium text-destructive hover:bg-destructive hover:text-white transition-all disabled:opacity-50"
+                            >
+                              {deletingId === monitor.id ? (
                                 <LucideLoader2 className="h-3 w-3 animate-spin" />
                               ) : (
-                                <LucidePlus className="h-3 w-3" />
+                                <LucideTrash2 className="h-3 w-3" />
                               )}
-                              Create Status Page
                             </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleCreateStatusPage(monitor.id)}
+                            disabled={requestingId === monitor.id}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition-all disabled:opacity-50"
+                          >
+                            {requestingId === monitor.id ? (
+                              <LucideLoader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <LucidePlus className="h-3 w-3" />
+                            )}
+                            Create Page
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </main>
-    </>
+      </div>
+    </main>
   );
 }
