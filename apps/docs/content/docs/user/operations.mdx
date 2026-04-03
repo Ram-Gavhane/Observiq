@@ -35,12 +35,6 @@ description: Handling incidents, notifications, and public status pages.
   - `GET /sessions` — list active sessions.
   - `POST /logout` — delete current or provided `sessionId`.
 
-## Operating the worker fleet
-
-- Run one worker per region with `REGION=US|EU|INDIA bun run index.ts`.
-- Scale horizontally by adding consumer names; keep one consumer group per region.
-- Redis stream: `better-uptime:monitor`; groups created by producer (`createConsumerGroup`).
-
 ## Incident runbook (suggested)
 
 1. **Alert received** → open dashboard → locate monitor.
@@ -48,13 +42,3 @@ description: Handling incidents, notifications, and public status pages.
 3. **Acknowledge** (if you track manually): update incident status to `ACKNOWLEDGED` (extend API as needed).
 4. **Communicate** → post update on the monitor’s status page.
 5. **Resolve** → after recovery, mark incident `RESOLVED` (extend API or DB).
-
-## Hardening & production tips
-
-- Run Postgres with backups; enable WAL archiving for point-in-time recovery.
-- Run Redis with persistence (AOF) and monitoring.
-- Configure HTTPS for API/web; set CORS to allowed origins.
-- Rotate `JWT_SECRET` and store secrets in a vault.
-- Add rate limiting on auth & monitor creation endpoints.
-- Implement password hashing (current code stores plain text — fix before production).
-- Add alert delivery (email/SMS/Slack) workers; current code stores channels but does not send.

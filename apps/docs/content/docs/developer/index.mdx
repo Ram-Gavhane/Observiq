@@ -1,0 +1,31 @@
+---
+title: Developer Docs
+description: Local setup, architecture, API surface, and contribution workflow for Better Uptime.
+---
+
+## Start here
+
+- [Getting started (local setup)](./getting-started)
+- [Platform architecture](./architecture)
+- [API reference](./api)
+
+## Contribution checklist
+
+1) Install deps: `bun install`
+2) Provision Postgres & Redis; set envs (`DATABASE_URL`, `JWT_SECRET`, `NEXT_PUBLIC_API_URL`)
+3) Run migrations: `bunx prisma migrate dev --name init`
+4) Start services: `bun dev` (runs web, api, producer, worker) or run apps individually.
+5) Add tests/linters as needed (lint script not configured; add when ready).
+
+## Service roles
+
+- **apps/web**: Next.js dashboard for users.
+- **apps/api**: Express API (auth, monitors, incidents, notifications, status pages).
+- **apps/producer**: Enqueues monitor jobs to Redis Streams.
+- **apps/worker**: Regional workers executing HTTP/PING/DNS/SSL checks and writing results.
+
+## Extending
+
+- New monitor type: add enum + worker check, adjust producer + UI.
+- New notification provider: extend NotificationChannel type and delivery pipeline.
+- Harden auth: add password hashing, rate limiting, and session security before production.

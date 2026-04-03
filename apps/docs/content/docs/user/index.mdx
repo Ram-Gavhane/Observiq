@@ -1,0 +1,32 @@
+---
+title: User Docs
+description: "How to use Better Uptime day-to-day: monitors, incidents, notifications, and status pages."
+---
+
+## What you can do
+
+- Create and manage monitors (HTTP, PING, DNS, SSL)
+- View uptime/latency on the dashboard
+- Handle incidents and timelines
+- Configure notification channels
+- Publish public status pages
+
+## Key guides
+
+- [Monitoring guide](./monitoring)
+- [Operations & alerts](./operations)
+- [API reference (for integrations)](../developer/api)
+
+## Quick start (UI)
+
+1) Sign up or sign in on the web app.  
+2) Click **Add Monitor** → pick type, target, regions, and interval.  
+3) Watch the dashboard for status/latency; create notification channels and attach them to monitors.  
+4) Create a status page for any monitor to share externally.  
+
+## Tips
+
+- Use multiple regions (US/EU/INDIA) for external services.  
+- Set SSL monitors with an expiry threshold (e.g., 30 days).  
+- For DNS, add `expectedValues` to detect hijacks.  
+- Keep intervals ≥30s to avoid noise.  
