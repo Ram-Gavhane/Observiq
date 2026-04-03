@@ -1,0 +1,67 @@
+---
+title: Platform Architecture
+description: How the web, API, producer, worker, database, and Redis fit together.
+---
+
+## High-level flow
+
+1. **User configures monitors** in the web app → API stores monitor definitions (type, target, regions, interval, config) in Postgres.
+2. **Producer** wakes up every minute, claims due monitors (`claimDueMonitors`) and enqueues jobs into the Redis Stream `better-uptime:monitor`.
+3. **Worker(s)** run per region (US/EU/INDIA). Each worker consumes from its Redis consumer group, executes the check, and writes results to Postgres.
+4. **API** aggregates results for dashboards, incidents, notifications, and public status pages.
+
+## Services
+
+- **Web (Next.js)**: `/apps/web` – dashboard, monitor CRUD, incidents, status pages, auth UI.
+- **API (Express)**: `/apps/api` – routes under `/monitors`, `/dashboard`, `/incidents`, `/statuspage`, `/notification`, `/auth`.
+- **Producer**: `/apps/producer/index.ts` – schedules checks, enqueues stream messages.
+- **Worker**: `/apps/worker/index.ts` – consumes jobs and runs check implementations in `/apps/worker/checks`.
+- **Database**: Prisma schema in `packages/db/prisma/schema.prisma`.
+- **Redis Streams**: `better-uptime:monitor` stream with consumer groups per region.
+
+## Data model (Postgres via Prisma)
+
+- `User`, `Session`
+- `Monitor` (type: HTTP | PING | DNS | SSL, target, regions[], intervalSec, config)
+- `MonitorCheckResult` (status: UP/DOWN/DEGRADED/UNKNOWN, region, durationMs, summary, details)
+- `NotificationChannel` (type + config), `MonitorNotificationChannel`
+- `Incident`, `IncidentEvent`, `AlertDelivery`
+- `StatusPage` (1:1 with Monitor)
+
+## Check types
+
+- **HTTP** (`apps/worker/checks/http.ts`): simple GET; latency + status code; DOWN on exception.
+- **PING** (`apps/worker/checks/ping.ts`): OS ping; packet loss/RTT; DEGRADED on partial loss.
+- **DNS** (`apps/worker/checks/dns.ts`): resolves record type (A/AAAA/CNAME/MX/NS/PTR/SOA/SRV/TXT); DOWN on mismatch or failure.
+- **SSL** (`apps/worker/checks/ssl.ts`): TLS connect; DOWN if invalid/expired; DEGRADED if close to expiry.
+
+## Redis stream contract
+
+Message fields produced by `apps/producer/index.ts`:
+```json
+{
+  "id": "<monitorId>",
+  "type": "HTTP|PING|DNS|SSL",
+  "target": "<url-or-host>",
+  "regions": ["US","EU","INDIA"],
+  "config": { ... } // monitor-specific config
+}
+```
+Workers filter messages to their REGION before executing.
+
+## Dashboard & stats
+
+`apps/api/src/modules/dashboard/dashboard.service.ts` computes:
+- Latest status per monitor (mapped to up/down/degraded/unknown)
+- Average latency (24h window)
+- Uptime% (7d window)
+- Per-monitor uptime/latency + lastCheckedAt
+
+## Status pages
+
+`StatusPage` is created per monitor. Public endpoint: `/statuspage/:monitorId` returns the page metadata and latest ticks for charts.
+
+## Extending
+
+- Add new monitor types: implement `runXCheck` in `/apps/worker/checks`, register type in Prisma enum `MonitorType`, update producer to enqueue jobs with the new type, and API/web to allow configuring it.
+- Add alert providers: extend `NotificationChannel.type` and delivery handling (currently stubbed).

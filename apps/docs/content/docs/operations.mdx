@@ -1,0 +1,60 @@
+---
+title: Operations & Alerts
+description: Handling incidents, notifications, and public status pages.
+---
+
+## Incidents
+
+- An `Incident` is created when a monitor goes DOWN (or DEGRADES, if you choose).
+- Timeline events live in `IncidentEvent`.
+- API routes:
+  - `GET /incidents` — list incidents for the authenticated user.
+  - `GET /incidents/:incidentId/timeline` — event history.
+
+## Notifications
+
+- Notification channels: email, SMS, Slack (extensible).
+- Create channel: `POST /create-channel` with `{ type, config }`.
+- List: `GET /get-channels`
+- Delete: `DELETE /delete-channel/:id`
+- Attach channels to a monitor: `PUT /monitors/:id/channels` with `channelIds: string[]`.
+
+## Status pages
+
+- One public status page per monitor.
+- Create: `POST /statuspage/:id` (body: `title`, `description` optional).
+- Fetch public data: `GET /statuspage/:monitorId` → returns page info + latest 500 ticks.
+- Delete: `DELETE /statuspage/:monitorId`.
+
+## Authentication & sessions
+
+- Sign up: `POST /signup` with `{ email, password, firstName, lastName }`.
+- Sign in: `POST /signin` → returns JWT + `sessionId` (1h expiry).
+- Include `Authorization: Bearer <token>` for authenticated routes.
+- Manage sessions:
+  - `GET /sessions` — list active sessions.
+  - `POST /logout` — delete current or provided `sessionId`.
+
+## Operating the worker fleet
+
+- Run one worker per region with `REGION=US|EU|INDIA bun run index.ts`.
+- Scale horizontally by adding consumer names; keep one consumer group per region.
+- Redis stream: `better-uptime:monitor`; groups created by producer (`createConsumerGroup`).
+
+## Incident runbook (suggested)
+
+1. **Alert received** → open dashboard → locate monitor.
+2. **Inspect checks** → `GET /monitors/:id/checks` for recent failures.
+3. **Acknowledge** (if you track manually): update incident status to `ACKNOWLEDGED` (extend API as needed).
+4. **Communicate** → post update on the monitor’s status page.
+5. **Resolve** → after recovery, mark incident `RESOLVED` (extend API or DB).
+
+## Hardening & production tips
+
+- Run Postgres with backups; enable WAL archiving for point-in-time recovery.
+- Run Redis with persistence (AOF) and monitoring.
+- Configure HTTPS for API/web; set CORS to allowed origins.
+- Rotate `JWT_SECRET` and store secrets in a vault.
+- Add rate limiting on auth & monitor creation endpoints.
+- Implement password hashing (current code stores plain text — fix before production).
+- Add alert delivery (email/SMS/Slack) workers; current code stores channels but does not send.

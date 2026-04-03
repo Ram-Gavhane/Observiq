@@ -1,0 +1,73 @@
+---
+title: Monitoring Guide
+description: How to create, view, and manage monitors in Better Uptime.
+---
+
+## Monitor types
+
+- **HTTP** – Performs GET; captures status code and response time.
+- **PING** – ICMP ping; tracks packet loss and RTT.
+- **DNS** – Resolves records (A/AAAA/CNAME/MX/NS/PTR/SOA/SRV/TXT) with optional expected values.
+- **SSL** – Opens TLS socket; checks validity and days to expiry.
+
+## Creating a monitor (Web)
+
+1. Go to **Dashboard → Add Monitor**.
+2. Fill fields:
+   - **Name**: friendly label.
+   - **Type**: HTTP/PING/DNS/SSL.
+   - **Target**: URL or hostname.
+   - **Regions**: choose one or more (US/EU/INDIA).
+   - **Interval**: seconds between checks (default 60s).
+   - **Config** (per type):
+     - HTTP: method (defaults to GET), timeoutMs, expectedStatusCodes, followRedirects.
+     - PING: packetCount, timeoutMs.
+     - DNS: recordType, expectedValues, resolver.
+     - SSL: port, serverName, expiryThresholdDays.
+3. Save. The producer enqueues jobs; workers run checks.
+
+## Managing monitors
+
+- **Pause**: set `paused=true` (API: update monitor; UI: toggle).
+- **Delete**: `/monitors/:id` (requires auth).
+- **Notification channels**: associate channels to a monitor (`updateMonitorChannels`).
+- **Status page**: one-per-monitor; create via UI or `POST /statuspage/:id`.
+
+## Viewing results
+
+- **Dashboard** shows:
+  - Latest status per monitor.
+  - Latency sparkline & average.
+  - Uptime % (7 days).
+  - Last checked timestamp.
+- **Monitor details**: recent checks (`/monitors/:id/checks`), insights (`/monitors/:id/insights`).
+
+## API endpoints (monitors)
+
+Base URL: `NEXT_PUBLIC_API_URL` (dev: `http://localhost:3001`)
+
+- `POST /monitors` — create monitor.
+- `GET /monitors` — list user monitors.
+- `GET /monitors/:id` — monitor details.
+- `DELETE /monitors/:id` — delete.
+- `GET /monitors/:id/insights` — uptime & response time trends.
+- `GET /monitors/:id/checks` — recent results.
+- `PUT /monitors/:id/channels` — set notification channel IDs.
+
+Headers: `Authorization: Bearer <token>` required for all monitor routes.
+
+## Example: create monitor via API
+
+```bash
+curl -X POST \"$API_URL/monitors\" \\
+  -H \"Authorization: Bearer $TOKEN\" \\
+  -H \"Content-Type: application/json\" \\
+  -d '{\"name\":\"Homepage\",\"type\":\"HTTP\",\"target\":\"https://example.com\",\"regions\":[\"US\",\"EU\"],\"intervalSec\":60,\"config\":{}}'
+```
+
+## Best practices
+
+- Start with multi-region (US+EU) for external sites; add INDIA if users are there.
+- Keep `intervalSec` ≥ 30s to avoid noisy data.
+- For DNS checks, set `expectedValues` to catch hijacks.
+- For SSL, set `expiryThresholdDays` to 30 to get early warnings.

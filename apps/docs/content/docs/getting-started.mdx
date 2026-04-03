@@ -1,0 +1,91 @@
+---
+title: Getting Started
+description: Install prerequisites, configure environments, and run Better Uptime locally.
+---
+
+## Overview
+
+Better Uptime is a full‑stack monitoring platform. It includes:
+- **Web app (Next.js)** for configuring monitors, viewing dashboards, and managing incidents.
+- **API (Express)** that powers authentication, monitors, incidents, notifications, and status pages.
+- **Producer** service that schedules checks and enqueues jobs to Redis Streams.
+- **Worker** service that consumes jobs and performs HTTP/PING/DNS/SSL checks, storing results in Postgres.
+
+## Prerequisites
+
+- Bun 1.3.4+ (ships with `bunx`)
+- Node.js 18+ (for tooling compatibility)
+- PostgreSQL
+- Redis
+
+Install dependencies:
+
+```bash
+bun install
+```
+
+## Environment variables
+
+Create `.env` files (example values):
+
+**Root or `packages/db`**
+```bash
+DATABASE_URL="postgresql://user:password@localhost:5432/better_uptime"
+```
+
+**`apps/api`**
+```bash
+JWT_SECRET="replace_me"
+DATABASE_URL="postgresql://user:password@localhost:5432/better_uptime"
+```
+
+Set `NEXT_PUBLIC_API_URL` in `apps/web/.env` to the API base URL (e.g., `http://localhost:3001`).
+
+## Database setup
+
+```bash
+bunx prisma migrate dev --name init
+```
+
+## Run all services (dev)
+
+```bash
+bun dev
+```
+
+Ports (default):
+- Web: http://localhost:3000
+- API: http://localhost:3001
+
+## Run individual services
+
+```bash
+# web UI
+cd apps/web && bun dev
+
+# API
+cd apps/api && bun dev
+
+# producer
+cd apps/producer && bun run index.ts
+
+# worker (set REGION=US|EU|INDIA)
+cd apps/worker && REGION=US bun run index.ts
+```
+
+## Creating your first monitor
+
+1) Sign up/sign in on the web UI.  
+2) Click **Add Monitor** and fill: name, type (HTTP/PING/DNS/SSL), target URL/host, regions, interval.  
+3) Save. The producer will enqueue checks; the worker processes them and the dashboard shows status/latency.
+
+## Seed data (optional)
+
+Add monitors via API (after login, set `Authorization: Bearer <token>`):
+
+```bash
+curl -X POST "$API_URL/monitors" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "name": "Example HTTP", "type": "HTTP", "target": "https://example.com", "regions": ["US","EU"], "intervalSec": 60 }'
+```

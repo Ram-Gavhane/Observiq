@@ -1,0 +1,73 @@
+---
+title: API Reference
+description: HTTP endpoints exposed by the Better Uptime API service.
+---
+
+All authenticated routes require `Authorization: Bearer <jwt>` (from `POST /signin`).
+
+## Auth
+
+- `POST /signup` — create user `{ email, password, firstName, lastName }`.
+- `POST /signin` — login, returns `{ token, sessionId }`.
+- `GET /me` — current user.
+- `PUT /me` — update `firstName`, `lastName`.
+- `PUT /me/password` — change password.
+- `GET /sessions` — list sessions.
+- `POST /logout` — delete current/provided session.
+
+## Monitors
+
+- `POST /monitors` — create (requires `name`, `type`, `target`, `regions`).
+- `GET /monitors` — list user monitors.
+- `GET /monitors/:id` — detail (includes statusPage and channels).
+- `DELETE /monitors/:id` — delete.
+- `GET /monitors/:id/insights` — uptime (24h/7d) + response time trends.
+- `GET /monitors/:id/checks` — recent check results (default 50).
+- `PUT /monitors/:id/channels` — set notification channel IDs.
+
+## Dashboard
+
+- `GET /dashboard/stats` — aggregate stats + monitors with latest status/uptime/latency.
+
+## Incidents
+
+- `GET /incidents` — list incidents (for user’s monitors).
+- `GET /incidents/:incidentId/timeline` — timeline events.
+
+## Status pages
+
+- `POST /statuspage/:id` — create status page for monitor.
+- `GET /statuspage/:monitorId` — fetch public status page data.
+- `DELETE /statuspage/:monitorId` — delete.
+
+## Notification channels
+
+- `POST /create-channel` — create channel `{ type, config }`.
+- `GET /get-channels` — list channels.
+- `DELETE /delete-channel/:id` — delete channel.
+
+## Error handling
+
+- 400: validation errors (e.g., missing fields, invalid type/region).
+- 401/403: missing/invalid token or unauthorized resource access.
+- 404: resource not found (monitor, status page, session).
+- 500: unexpected server error.
+
+## Rate limits & pagination
+
+- Not yet implemented; add middleware before production use.
+
+## Curl examples
+
+Create DNS monitor with expected value:
+```bash
+curl -X POST \"$API_URL/monitors\" \\
+  -H \"Authorization: Bearer $TOKEN\" \\
+  -H \"Content-Type: application/json\" \\
+  -d '{\"name\":\"DNS check\",\"type\":\"DNS\",\"target\":\"example.com\",\"regions\":[\"US\"],\"config\":{\"recordType\":\"A\",\"expectedValues\":[\"93.184.216.34\"]}}'
+```
+
+Fetch dashboard stats:
+```bash
+curl -H \"Authorization: Bearer $TOKEN\" \"$API_URL/dashboard/stats\"
+```
