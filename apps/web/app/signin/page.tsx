@@ -1,13 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LucideArrowRight, LucideLoader2, LucideRadar, LucideCheckCircle2, LucideActivity, LucideShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import axios from "axios";
 
 export default function SigninPage() {
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+  axios.get(`${process.env.NEXT_PUBLIC_API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } })
+    .then(() => router.replace("/dashboard"))
+    .catch(() => {
+      // token invalid; let them sign in
+    });
+}, []);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
