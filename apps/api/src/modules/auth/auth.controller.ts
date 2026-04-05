@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 import { JWT_SECRET } from "../../common/config";
 import {
   createSession,
@@ -13,6 +14,7 @@ import {
   updateUserPassword,
   updateUserProfile,
 } from "./auth.service";
+import { password } from "bun";
 
 export const signup = async (req: Request, res: Response) => {
   const { email, password, firstName, lastName } = req.body;
@@ -27,7 +29,8 @@ export const signup = async (req: Request, res: Response) => {
   }
 
   try {
-    const user = await createUser(email, password, firstName, lastName);
+    const hashedPassword = await bcrypt.hash(password, 3);
+    const user = await createUser(email, hashedPassword, firstName, lastName);
     res.json({
       message: "User created successfully",
       userId: user.id,
@@ -48,7 +51,8 @@ export const signin = async (req: Request, res: Response) => {
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
-  if (user.password !== password) {
+  const passCheck = await bcrypt.compare(password, user.password);
+  if (passCheck) {
     return res.status(401).json({ message: "Invalid password" });
   }
 
