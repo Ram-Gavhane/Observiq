@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -13,65 +7,107 @@ datasource db {
   provider = "postgresql"
 }
 
+// Core users & auth
 model User {
-  id                   String                @id @default(uuid())
-  email                String                @unique
-  firstName            String
-  lastName             String
-  role                 String                @default("owner")
-  password             String
-  sessions             Session[]
-  monitors             Monitor[]
-  notificationChannels NotificationChannel[]
+  id        String   @id @default(uuid())
+  email     String   @unique
+  firstName String
+  lastName  String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions          Session[]
+  memberships       TeamMembership[]
+  contacts          NotificationChannel[] // personal contact methods
+  createdMonitors   Monitor[]             @relation("MonitorCreator")
+  layerParticipants LayerParticipant[]
+  scheduleOverrides ScheduleOverride[]
+  escalationSteps   EscalationStep[] // when targetType=USER
+  alertDeliveries   AlertDelivery[] // who was actually paged
 }
 
-model Monitor {
-  id          String      @id @default(uuid())
-  userId      String
-  name        String
-  type        MonitorType
-  target      String
-  regions     REGION[]
-  intervalSec Int         @default(60)
-  nextCheckAt DateTime    @default(now())
-  paused      Boolean     @default(false)
-  config      Json
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+model Session {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  expiresAt  DateTime?
 
-  user                        User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, lastSeenAt])
+}
+
+// Tenancy & access
+model Team {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships        TeamMembership[]
+  monitors           Monitor[]
+  schedules          OnCallSchedule[]
+  escalationPolicies EscalationPolicy[]
+}
+
+model TeamMembership {
+  id        String           @id @default(uuid())
+  teamId    String
+  userId    String
+  role      TeamRole         @default(MEMBER)
+  status    MembershipStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
+enum TeamRole {
+  ADMIN
+  MEMBER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+  REMOVED
+}
+
+// Monitoring
+model Monitor {
+  id                 String      @id @default(uuid())
+  teamId             String
+  createdById        String?
+  name               String
+  type               MonitorType
+  target             String
+  regions            REGION[]
+  intervalSec        Int         @default(60)
+  nextCheckAt        DateTime    @default(now())
+  paused             Boolean     @default(false)
+  config             Json
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  escalationPolicyId String?
+
+  team                        Team                         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy                   User?                        @relation("MonitorCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  escalationPolicy            EscalationPolicy?            @relation(fields: [escalationPolicyId], references: [id])
   checkResults                MonitorCheckResult[]
   statusPage                  StatusPage?
   incidents                   Incident[]
   monitorNotificationChannels MonitorNotificationChannel[]
 
-  @@index([userId])
+  @@index([teamId])
   @@index([nextCheckAt, paused])
 }
-
-// type HttpConfig = {
-//   method?: "GET" | "HEAD";
-//   timeoutMs?: number;
-//   expectedStatusCodes?: number[];
-//   followRedirects?: boolean;
-// };
-
-// type PingConfig = {
-//   timeoutMs?: number;
-//   packetCount?: number;
-// };
-
-// type DnsConfig = {
-//   recordType: "A" | "AAAA" | "CNAME" | "MX" | "TXT";
-//   expectedValues?: string[];
-//   resolver?: string;
-// };
-
-// type SslConfig = {
-//   port?: number;
-//   serverName?: string;
-//   expiryThresholdDays?: number;
-// };
 
 enum MonitorType {
   HTTP
@@ -80,6 +116,13 @@ enum MonitorType {
   SSL
 }
 
+enum REGION {
+  US
+  EU
+  ASIA
+}
+
+// Status pages
 model StatusPage {
   id          String   @id @default(uuid())
   title       String
@@ -89,12 +132,7 @@ model StatusPage {
   createdAt   DateTime @default(now())
 }
 
-enum REGION {
-  US
-  EU
-  INDIA
-}
-
+// Check results & incidents
 model MonitorCheckResult {
   id         String        @id @default(uuid())
   monitorId  String
@@ -116,35 +154,14 @@ model MonitorCheckResult {
 enum MonitorStatus {
   UP
   DOWN
+
   DEGRADED
+
   UNKNOWN
 }
 
-model NotificationChannel {
-  id        String   @id @default(uuid())
-  userId    String
-  type      String // "email" | "sms" | "slack"
-  config    Json // { "email": "john@doe.com" }
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user                        User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  monitorNotificationChannels MonitorNotificationChannel[]
-  alertDeliveries             AlertDelivery[]
-}
-
-model MonitorNotificationChannel {
-  monitorId             String
-  notificationChannelId String
-  notificationChannel   NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
-  monitor               Monitor             @relation(fields: [monitorId], references: [id], onDelete: Cascade)
-
-  @@id([monitorId, notificationChannelId])
-}
-
 model Incident {
-  id            String         @id @default(cuid())
+  id            String         @id @default(uuid())
   monitorId     String
   status        IncidentStatus @default(OPEN)
   severity      String?
@@ -168,21 +185,6 @@ enum IncidentStatus {
   RESOLVED
 }
 
-model AlertDelivery {
-  id                    String   @id @default(uuid())
-  incidentId            String
-  notificationChannelId String
-  eventType             String
-  status                String?
-  providerMessage       String?
-  createdAt             DateTime @default(now())
-
-  incident            Incident            @relation(fields: [incidentId], references: [id], onDelete: Cascade)
-  notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
-
-  @@index([incidentId])
-}
-
 model IncidentEvent {
   id         String   @id @default(cuid())
   incidentId String
@@ -195,15 +197,142 @@ model IncidentEvent {
   @@index([incidentId])
 }
 
-model Session {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userAgent  String?
-  ipAddress  String?
-  createdAt  DateTime @default(now())
-  lastSeenAt DateTime @default(now())
-  expiresAt  DateTime?
+// Notification channels (personal)
+model NotificationChannel {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String // email | sms | voice | slack | webhook
+  config    Json
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([userId, lastSeenAt])
+  user                        User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitorNotificationChannels MonitorNotificationChannel[]
+  alertDeliveries             AlertDelivery[]
+}
+
+// Legacy/static monitor → channel links (kept as fallback)
+model MonitorNotificationChannel {
+  monitorId             String
+  notificationChannelId String
+  notificationChannel   NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+  monitor               Monitor             @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@id([monitorId, notificationChannelId])
+}
+
+// On‑call schedules
+model OnCallSchedule {
+  id        String   @id @default(uuid())
+  teamId    String
+  name      String
+  timezone  String // IANA
+  createdAt DateTime @default(now())
+
+  team            Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  layers          ScheduleLayer[]
+  overrides       ScheduleOverride[]
+  escalationSteps EscalationStep[]
+}
+
+model ScheduleLayer {
+  id           String             @id @default(uuid())
+  scheduleId   String
+  order        Int
+  shiftMinutes Int
+  startsAt     DateTime
+  rotationType RotationType       @default(FIXED)
+  participants LayerParticipant[]
+
+  schedule OnCallSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+}
+
+enum RotationType {
+  FIXED
+  WEEKLY
+  CUSTOM
+}
+
+model LayerParticipant {
+  id        String   @id @default(uuid())
+  layerId   String
+  userId    String
+  position  Int // rotation order
+  createdAt DateTime @default(now())
+
+  layer ScheduleLayer @relation(fields: [layerId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([layerId, position])
+  @@unique([layerId, userId]) // prevent duplicates in a layer
+}
+
+model ScheduleOverride {
+  id         String   @id @default(uuid())
+  scheduleId String
+  userId     String
+  startsAt   DateTime
+  endsAt     DateTime
+  reason     String?
+
+  schedule OnCallSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId, startsAt, endsAt])
+}
+
+// Escalation policies
+model EscalationPolicy {
+  id        String   @id @default(uuid())
+  teamId    String
+  name      String
+  repeat    Int      @default(0) // loops after last step
+  createdAt DateTime @default(now())
+
+  team     Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  steps    EscalationStep[]
+  monitors Monitor[]
+}
+
+model EscalationStep {
+  id           String           @id @default(uuid())
+  policyId     String
+  order        Int
+  delaySeconds Int
+  targetType   EscalationTarget
+  scheduleId   String?
+  userId       String?
+  notifyAll    Boolean          @default(false)
+
+  policy   EscalationPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  schedule OnCallSchedule?  @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user     User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([policyId, order])
+}
+
+enum EscalationTarget {
+  SCHEDULE
+  USER
+  TEAM
+}
+
+// Alert auditing
+model AlertDelivery {
+  id                    String   @id @default(uuid())
+  incidentId            String
+  notificationChannelId String
+  targetUserId          String?
+  eventType             String
+  status                String?
+  providerMessage       String?
+  createdAt             DateTime @default(now())
+
+  incident            Incident            @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+  targetUser          User?               @relation(fields: [targetUserId], references: [id])
+
+  @@index([incidentId])
+  @@index([targetUserId])
 }
